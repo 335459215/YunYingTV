@@ -1,57 +1,66 @@
 name: Build Android APK
 
 on:
+  push:
+    branches: [master]
+    tags:
+      - 'v*'
+  pull_request:
+    branches: [master]
   workflow_dispatch:
 
-permissions:
-  contents: write
-
 jobs:
-  direct_build:
-    name: Build Android TV APK
+  build:
+    name: Build APK
     runs-on: ubuntu-latest
+    
     steps:
-      - name: Check out repository
-        uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
-      - name: Set up Node.js
-        uses: actions/setup-node@v3
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
         with:
-          node-version: 18
-          cache: "yarn"
+          node-version: '18'
+          cache: 'yarn'
 
       - name: Install dependencies
         run: yarn install --frozen-lockfile
 
-      - name: Get version from package.json
-        id: package-version
-        run: echo "version=$(node -p "require('./package.json').version")" >> $GITHUB_OUTPUT
-
-      - name: Setup JDK
-        uses: actions/setup-java@v3
+      - name: Setup Java JDK
+        uses: actions/setup-java@v4
         with:
-          distribution: "zulu"
-          java-version: "17"
+          distribution: 'temurin'
+          java-version: '17'
 
-      - name: Prebuild TV App
+      - name: Get version from package.json
+        id: version
+        run: echo "VERSION=$(node -p "require('./package.json').version")" >> $GITHUB_OUTPUT
+
+      - name: Prebuild (Expo)
         run: yarn prebuild
+        env:
+          EXPO_NO_GIT_CLEAN: 1
 
-      - name: Build TV APK
+      - name: Build APK
         run: yarn build
 
-      - name: Rename APK file
+      - name: Prepare APK
         run: |
-          mkdir -p artifacts
-          cp android/app/build/outputs/apk/release/app-release.apk artifacts/orionTV.${{ steps.package-version.outputs.version }}.apk
+          mkdir -p release
+          cp android/app/build/outputs/apk/release/app-release.apk release/YunYingTV-v${{ steps.version.outputs.VERSION }}.apk
 
-      - name: Create Release and Upload APK
-        uses: softprops/action-gh-release@v2
+      - name: Upload APK Artifact
+        uses: actions/upload-artifact@v4
         with:
-          tag_name: v${{ steps.package-version.outputs.version }}
-          name: Release v${{ steps.package-version.outputs.version }}
-          body: Automated release for version v${{ steps.package-version.outputs.version }}.
-          draft: false
-          prerelease: false
-          files: artifacts/orionTV.${{ steps.package-version.outputs.version }}.apk
+          name: apk
+          path: release/*.apk
+          retention-days: 30
+
+      - name: Create Release
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v1
+        with:
+          files: release/*.apk
+          generate_release_notes: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
