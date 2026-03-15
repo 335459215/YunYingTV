@@ -23,7 +23,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '18'
           cache: 'yarn'
 
       - name: Install dependencies
@@ -40,18 +40,49 @@ jobs:
         run: echo "VERSION=$(node -p "require('./package.json').version")" >> $GITHUB_OUTPUT
 
       - name: Prebuild (Expo)
-        run: yarn prebuild
+        run: |
+          echo "🔧 Starting prebuild..."
+          export EXPO_USE_METRO_WORKSPACE_ROOT=1
+          yarn prebuild
         env:
           EXPO_NO_GIT_CLEAN: 1
-          EXPO_USE_METRO_WORKSPACE_ROOT: 1
+
+      - name: Verify Android directory
+        run: |
+          echo "📁 Checking Android directory..."
+          ls -la android/
+          ls -la xml/ || echo "xml/ directory not found"
+
+      - name: Copy config files
+        run: |
+          echo "📋 Copying configuration files..."
+          node scripts/copy-config.js
+          echo "✅ Config files copied"
+          ls -la android/app/src/
+
+      - name: Make gradlew executable
+        run: |
+          echo "🔨 Making gradlew executable..."
+          chmod +x android/gradlew
 
       - name: Build APK
-        run: cd android && ./gradlew assembleRelease
+        run: |
+          echo "🏗️  Building APK..."
+          cd android
+          ./gradlew assembleRelease --stacktrace
+        env:
+          GRADLE_OPTS: "-Xmx4g -XX:MaxMetaspaceSize=1g"
+
+      - name: Verify APK output
+        run: |
+          echo "📦 Verifying APK output..."
+          ls -lh android/app/build/outputs/apk/release/ || echo "APK not found"
 
       - name: Prepare APK
         run: |
           mkdir -p release
           cp android/app/build/outputs/apk/release/app-release.apk release/YunYingTV-v${{ steps.version.outputs.VERSION }}.apk
+          echo "✅ APK prepared: release/YunYingTV-v${{ steps.version.outputs.VERSION }}.apk"
 
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
