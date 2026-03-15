@@ -3,10 +3,6 @@ name: Build Android APK
 on:
   push:
     branches: [master]
-    tags:
-      - 'v*'
-  pull_request:
-    branches: [master]
   workflow_dispatch:
 
 jobs:
@@ -37,12 +33,25 @@ jobs:
         run: echo "VERSION=$(node -p "require('./package.json').version")" >> $GITHUB_OUTPUT
 
       - name: Prebuild (Expo)
-        run: yarn prebuild
+        run: |
+          export EXPO_USE_METRO_WORKSPACE_ROOT=1
+          yarn expo prebuild --clean
         env:
           EXPO_NO_GIT_CLEAN: 1
 
+      - name: Copy config files
+        run: |
+          mkdir -p android/app/src/main/assets
+          mkdir -p android/app/src/main/res
+          cp -r xml/* android/app/src/ || true
+
+      - name: Make gradlew executable
+        run: chmod +x android/gradlew
+
       - name: Build APK
-        run: yarn build
+        run: |
+          cd android
+          ./gradlew assembleRelease
 
       - name: Prepare APK
         run: |
