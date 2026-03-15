@@ -81,10 +81,22 @@ jobs:
 
       - name: Create Release
         if: github.event.inputs.create_release == 'true'
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@v2
         with:
           tag_name: v${{ steps.version.outputs.VERSION }}
+          name: Release v${{ steps.version.outputs.VERSION }}
+          body: |
+            ## YunYingTV v${{ steps.version.outputs.VERSION }}
+            
+            Automated build from GitHub Actions
+            
+            ### Changes
+            - Build APK with GitHub Actions
+            - Optimized for Android TV
+          draft: false
+          prerelease: false
           files: release/*.apk
+          fail_on_unmatched_files: false
           generate_release_notes: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
