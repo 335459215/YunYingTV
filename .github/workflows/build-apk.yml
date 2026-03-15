@@ -12,6 +12,11 @@ on:
           - 'true'
           - 'false'
 
+permissions:
+  contents: write
+  packages: write
+  actions: write
+
 jobs:
   build:
     name: Build APK
@@ -103,5 +108,3 @@ jobs:
           make_latest: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          RETRY_COUNT: 3
-          RETRY_DELAY: 5000
