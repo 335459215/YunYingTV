@@ -27,9 +27,9 @@ jobs:
 
       - name: Install dependencies
         run: |
-          echo "📦 Installing dependencies with yarn..."
+          echo "📦 Installing dependencies..."
           rm -f package-lock.json
-          yarn install --frozen-lockfile || yarn install --ignore-engines
+          yarn install --ignore-engines
 
       - name: Get version from package.json
         id: version
@@ -37,11 +37,11 @@ jobs:
 
       - name: Prebuild (Expo)
         run: |
-          echo "🔧 Starting prebuild..."
-          export EXPO_USE_METRO_WORKSPACE_ROOT=1
-          yarn expo prebuild --clean
+          echo "🔧 Running expo prebuild..."
+          npx expo prebuild --clean --no-install
         env:
           EXPO_NO_GIT_CLEAN: 1
+          EXPO_USE_METRO_WORKSPACE_ROOT: 1
 
       - name: Copy config files
         run: |
@@ -57,14 +57,20 @@ jobs:
         run: |
           echo "🏗️  Building APK..."
           cd android
-          ./gradlew assembleRelease --stacktrace
+          ./gradlew assembleRelease --stacktrace --no-daemon
         env:
           GRADLE_OPTS: "-Xmx4g -XX:MaxMetaspaceSize=1g"
+
+      - name: Verify APK
+        run: |
+          echo "📦 Verifying APK..."
+          ls -lh android/app/build/outputs/apk/release/ || echo "No APK found"
 
       - name: Prepare APK
         run: |
           mkdir -p release
           cp android/app/build/outputs/apk/release/app-release.apk release/YunYingTV-v${{ steps.version.outputs.VERSION }}.apk
+          echo "✅ APK ready: release/YunYingTV-v${{ steps.version.outputs.VERSION }}.apk"
 
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
