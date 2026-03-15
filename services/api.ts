@@ -1,4 +1,5 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { ApiAdapter } from "./apiAdapter";
 
 // region: --- Interface Definitions ---
 export interface DoubanItem {
@@ -139,7 +140,13 @@ export class API {
   async getFavorites(key?: string): Promise<Record<string, Favorite> | Favorite | null> {
     const url = key ? `/api/favorites?key=${encodeURIComponent(key)}` : "/api/favorites";
     const response = await this._fetch(url);
-    return response.json();
+    const data = await response.json();
+    
+    // 使用适配器智能处理不同后端格式
+    if (key) {
+      return ApiAdapter.adaptFavorite({ [key]: data })[key] || null;
+    }
+    return ApiAdapter.adaptFavorite(data);
   }
 
   async addFavorite(key: string, favorite: Omit<Favorite, "save_time">): Promise<{ success: boolean }> {
@@ -159,7 +166,10 @@ export class API {
 
   async getPlayRecords(): Promise<Record<string, PlayRecord>> {
     const response = await this._fetch("/api/playrecords");
-    return response.json();
+    const data = await response.json();
+    
+    // 使用适配器智能处理不同后端格式
+    return ApiAdapter.adaptPlayRecord(data);
   }
 
   async savePlayRecord(key: string, record: Omit<PlayRecord, "save_time">): Promise<{ success: boolean }> {
@@ -215,14 +225,21 @@ export class API {
   async searchVideos(query: string): Promise<{ results: SearchResult[] }> {
     const url = `/api/search?q=${encodeURIComponent(query)}`;
     const response = await this._fetch(url);
-    return response.json();
+    const data = await response.json();
+    
+    // 使用适配器智能处理不同后端格式
+    const results = ApiAdapter.adaptSearchResult(data, this.baseURL);
+    return { results };
   }
 
   async searchVideo(query: string, resourceId: string, signal?: AbortSignal): Promise<{ results: SearchResult[] }> {
     const url = `/api/search/one?q=${encodeURIComponent(query)}&resourceId=${encodeURIComponent(resourceId)}`;
     const response = await this._fetch(url, { signal });
-    const { results } = await response.json();
-    return { results: results.filter((item: SearchResult) => item.title === query )};
+    const data = await response.json();
+    
+    // 使用适配器智能处理不同后端格式
+    const results = ApiAdapter.adaptSearchResult(data, this.baseURL);
+    return { results: results.filter((item: SearchResult) => item.title === query) };
   }
 
   async getResources(signal?: AbortSignal): Promise<ApiSite[]> {
@@ -234,7 +251,14 @@ export class API {
   async getVideoDetail(source: string, id: string): Promise<VideoDetail> {
     const url = `/api/detail?source=${source}&id=${id}`;
     const response = await this._fetch(url);
-    return response.json();
+    const data = await response.json();
+    
+    // 使用适配器智能处理不同后端格式
+    const detail = ApiAdapter.adaptVideoDetail(data, source);
+    if (!detail) {
+      throw new Error("Video detail not found");
+    }
+    return detail;
   }
 }
 
