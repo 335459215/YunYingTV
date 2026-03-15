@@ -1,9 +1,16 @@
 name: Build Android APK
 
 on:
-  push:
-    branches: [master]
   workflow_dispatch:
+    inputs:
+      create_release:
+        description: 'Create GitHub Release'
+        required: true
+        default: 'false'
+        type: choice
+        options:
+          - 'true'
+          - 'false'
 
 jobs:
   build:
@@ -16,7 +23,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '18'
+          node-version: '20'
           cache: 'yarn'
 
       - name: Install dependencies
@@ -33,25 +40,13 @@ jobs:
         run: echo "VERSION=$(node -p "require('./package.json').version")" >> $GITHUB_OUTPUT
 
       - name: Prebuild (Expo)
-        run: |
-          export EXPO_USE_METRO_WORKSPACE_ROOT=1
-          yarn expo prebuild --clean
+        run: yarn prebuild
         env:
           EXPO_NO_GIT_CLEAN: 1
-
-      - name: Copy config files
-        run: |
-          mkdir -p android/app/src/main/assets
-          mkdir -p android/app/src/main/res
-          cp -r xml/* android/app/src/ || true
-
-      - name: Make gradlew executable
-        run: chmod +x android/gradlew
+          EXPO_USE_METRO_WORKSPACE_ROOT: 1
 
       - name: Build APK
-        run: |
-          cd android
-          ./gradlew assembleRelease
+        run: cd android && ./gradlew assembleRelease
 
       - name: Prepare APK
         run: |
@@ -61,14 +56,15 @@ jobs:
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: apk
+          name: YunYingTV-v${{ steps.version.outputs.VERSION }}
           path: release/*.apk
           retention-days: 30
 
       - name: Create Release
-        if: startsWith(github.ref, 'refs/tags/v')
+        if: github.event.inputs.create_release == 'true'
         uses: softprops/action-gh-release@v1
         with:
+          tag_name: v${{ steps.version.outputs.VERSION }}
           files: release/*.apk
           generate_release_notes: true
         env:
