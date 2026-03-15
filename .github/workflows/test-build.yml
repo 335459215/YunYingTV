@@ -18,7 +18,10 @@ jobs:
           cache: 'yarn'
 
       - name: Install dependencies
-        run: yarn install --frozen-lockfile
+        run: |
+          echo "📦 Installing dependencies with yarn..."
+          rm -f package-lock.json
+          yarn install --frozen-lockfile
 
       - name: Check project structure
         run: |
@@ -34,4 +37,4 @@ jobs:
       - name: Test copy-config script
         run: |
           echo "🧪 Testing copy-config.js..."
-          node scripts/copy-config.js --help || node scripts/copy-config.js
+          node scripts/copy-config.js
