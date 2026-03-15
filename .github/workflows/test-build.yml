@@ -17,6 +17,14 @@ jobs:
           node-version: '18'
           cache: 'yarn'
 
+      - name: Verify Node.js
+        run: |
+          echo "🔍 Verifying Node.js installation..."
+          which node
+          node --version
+          which yarn
+          yarn --version
+
       - name: Install dependencies
         run: |
           echo "📦 Installing dependencies with yarn..."
@@ -37,4 +45,5 @@ jobs:
       - name: Test copy-config script
         run: |
           echo "🧪 Testing copy-config.js..."
+          node --version
           node scripts/copy-config.js
