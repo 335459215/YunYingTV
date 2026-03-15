@@ -1,0 +1,37 @@
+name: Test Build
+
+on:
+  workflow_dispatch:
+
+jobs:
+  test:
+    name: Test Environment
+    runs-on: ubuntu-latest
+    
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'yarn'
+
+      - name: Install dependencies
+        run: yarn install --frozen-lockfile
+
+      - name: Check project structure
+        run: |
+          echo "📁 Project root:"
+          ls -la
+          echo ""
+          echo "📁 xml directory:"
+          ls -la xml/ || echo "xml/ not found"
+          echo ""
+          echo "📁 scripts directory:"
+          ls -la scripts/ || echo "scripts/ not found"
+
+      - name: Test copy-config script
+        run: |
+          echo "🧪 Testing copy-config.js..."
+          node scripts/copy-config.js --help || node scripts/copy-config.js
