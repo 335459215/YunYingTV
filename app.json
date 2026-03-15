@@ -2,21 +2,6 @@
   "expo": {
     "plugins": [
       [
-        "@react-native-tvos/config-tv",
-        {
-          "androidTVBanner": "./assets/tv_icons/icon-400x240.png",
-          "appleTVImages": {
-            "icon": "./assets/tv_icons/icon-1280x768.png",
-            "iconSmall": "./assets/tv_icons/icon-400x240.png",
-            "iconSmall2x": "./assets/tv_icons/icon-800x480.png",
-            "topShelf": "./assets/tv_icons/icon-1920x720.png",
-            "topShelf2x": "./assets/tv_icons/icon-3840x1440.png",
-            "topShelfWide": "./assets/tv_icons/icon-2320x720.png",
-            "topShelfWide2x": "./assets/tv_icons/icon-4640x1440.png"
-          }
-        }
-      ],
-      [
         "expo-build-properties",
         {
           "ios": {
@@ -34,16 +19,17 @@
     "experiments": {
       "typedRoutes": true
     },
-    "name": "OrionTV",
-    "slug": "OrionTV",
+    "name": "YunYingTV",
+    "slug": "yunying-tv",
     "orientation": "default",
     "icon": "./assets/images/icon.png",
     "userInterfaceStyle": "dark",
     "assetBundlePatterns": [
       "**/*"
     ],
+    "platforms": ["ios", "android", "web"],
     "android": {
-      "package": "com.oriontv",
+      "package": "com.yunyingtv",
       "usesCleartextTraffic": true,
       "hardwareAcceleration": true,
       "networkSecurityConfig": "@xml/network_security_config",
@@ -59,7 +45,7 @@
           "action": "android.intent.action.VIEW",
           "data": [
             {
-              "scheme": "oriontv"
+              "scheme": "yunyingtv"
             }
           ],
           "category": [
@@ -70,7 +56,7 @@
       ]
     },
     "ios": {
-      "bundleIdentifier": "com.oriontv",
+      "bundleIdentifier": "com.yunyingtv",
       "supportsTablet": true,
       "requireFullScreen": false,
       "supportedInterfaceOrientations": [
@@ -83,13 +69,13 @@
         "usesNonExemptEncryption": false
       }
     },
-    "scheme": "oriontv",
+    "scheme": "yunyingtv",
     "extra": {
       "router": {
         "origin": false
       },
       "eas": {
-        "projectId": "b4eddfdb-08cb-4ffc-828d-a27f493e10f7"
+        "projectId": "f6a74c52-3758-4d6a-ae53-a0548af12fbe"
       }
     }
   }

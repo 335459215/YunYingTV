@@ -1,124 +1,198 @@
 import React, { forwardRef } from "react";
-import { Animated, Pressable, StyleSheet, StyleProp, ViewStyle, PressableProps, TextStyle, View, Platform } from "react-native";
+import { Animated, Pressable, StyleSheet, StyleProp, ViewStyle, PressableProps, TextStyle, View } from "react-native";
 import { ThemedText } from "./ThemedText";
 import { Colors } from "@/constants/Colors";
 import { useButtonAnimation } from "@/hooks/useAnimation";
 import { useResponsiveLayout } from "@/hooks/useResponsiveLayout";
+import { useThemeColor } from "@/hooks/useThemeColor";
+import { useTextStyles } from "@/hooks/useTextStyles";
 
 interface StyledButtonProps extends PressableProps {
   children?: React.ReactNode;
   text?: string;
-  variant?: "default" | "primary" | "ghost";
+  variant?: "default" | "primary" | "ghost" | "secondary" | "danger";
+  size?: "small" | "medium" | "large";
   isSelected?: boolean;
   style?: StyleProp<ViewStyle>;
   textStyle?: StyleProp<TextStyle>;
 }
 
 export const StyledButton = forwardRef<View, StyledButtonProps>(
-  ({ children, text, variant = "default", isSelected = false, style, textStyle, ...rest }, ref) => {
-    const colorScheme = "dark";
-    const colors = Colors[colorScheme];
+  ({ children, text, variant = "default", size = "medium", isSelected = false, style, textStyle, ...rest }, ref) => {
     const [isFocused, setIsFocused] = React.useState(false);
     const animationStyle = useButtonAnimation(isFocused);
-    const deviceType = useResponsiveLayout().deviceType;
+    const { deviceType } = useResponsiveLayout();
+    const textStyles = useTextStyles();
+    
+    const borderColor = useThemeColor({}, "border");
+    const textColor = useThemeColor({}, "text");
+    const primaryColor = useThemeColor({}, "primary");
+    const backgroundColor = useThemeColor({}, "background");
+    const linkColor = useThemeColor({}, "link");
+    const tintColor = useThemeColor({}, "primary");
+
+    const isTV = deviceType === "tv";
+
+    const sizeStyles = {
+      small: {
+        paddingHorizontal: isTV ? 16 : 12,
+        paddingVertical: isTV ? 8 : 6,
+        textSize: textStyles.bodySmall.fontSize,
+      },
+      medium: {
+        paddingHorizontal: isTV ? 24 : 16,
+        paddingVertical: isTV ? 14 : 10,
+        textSize: isTV ? textStyles.body.fontSize + 2 : textStyles.body.fontSize,
+      },
+      large: {
+        paddingHorizontal: isTV ? 32 : 20,
+        paddingVertical: isTV ? 18 : 14,
+        textSize: isTV ? textStyles.title3.fontSize + 2 : textStyles.title3.fontSize,
+      },
+    };
 
     const variantStyles = {
-      default: StyleSheet.create({
+      default: {
         button: {
-          backgroundColor: colors.border,
+          backgroundColor: borderColor,
         },
         text: {
-          color: colors.text,
+          color: textColor,
         },
         selectedButton: {
-          backgroundColor: colors.primary,
+          backgroundColor: primaryColor,
         },
         focusedButton: {
-          borderColor: colors.primary,
+          borderColor: primaryColor,
+          backgroundColor: "rgba(74, 158, 255, 0.15)",
         },
         selectedText: {
           color: Colors.dark.text,
         },
-      }),
-      primary: StyleSheet.create({
+      },
+      primary: {
         button: {
           backgroundColor: "transparent",
         },
         text: {
-          color: colors.text,
+          color: textColor,
         },
         focusedButton: {
-          backgroundColor: colors.primary,
-          borderColor: colors.background,
+          backgroundColor: primaryColor,
+          borderColor: backgroundColor,
         },
         selectedButton: {
-          backgroundColor: colors.primary,
+          backgroundColor: primaryColor,
         },
         selectedText: {
-          color: colors.link,
+          color: linkColor,
         },
-      }),
-      ghost: StyleSheet.create({
+      },
+      ghost: {
         button: {
           backgroundColor: "transparent",
         },
         text: {
-          color: colors.text,
+          color: textColor,
         },
         focusedButton: {
-          backgroundColor: "rgba(119, 119, 119, 0.2)",
-          borderColor: colors.primary,
+          backgroundColor: "rgba(74, 158, 255, 0.2)",
+          borderColor: primaryColor,
         },
         selectedButton: {},
         selectedText: {},
-      }),
+      },
+      secondary: {
+        button: {
+          backgroundColor: "rgba(119, 119, 119, 0.3)",
+        },
+        text: {
+          color: textColor,
+        },
+        focusedButton: {
+          backgroundColor: "rgba(119, 119, 119, 0.5)",
+          borderColor: primaryColor,
+        },
+        selectedButton: {
+          backgroundColor: "rgba(119, 119, 119, 0.5)",
+        },
+        selectedText: {
+          color: textColor,
+        },
+      },
+      danger: {
+        button: {
+          backgroundColor: "rgba(255, 0, 0, 0.2)",
+        },
+        text: {
+          color: "#ff4444",
+        },
+        focusedButton: {
+          backgroundColor: "rgba(255, 0, 0, 0.3)",
+          borderColor: "#ff4444",
+        },
+        selectedButton: {
+          backgroundColor: "rgba(255, 0, 0, 0.3)",
+        },
+        selectedText: {
+          color: "#ff4444",
+        },
+      },
     };
 
     const styles = StyleSheet.create({
       button: {
-        paddingHorizontal: 16,
-        paddingVertical: 10,
-        borderRadius: 8,
-        borderWidth: 2,
+        paddingHorizontal: sizeStyles[size].paddingHorizontal,
+        paddingVertical: sizeStyles[size].paddingVertical,
+        borderRadius: isTV ? 12 : 8,
+        borderWidth: isTV ? 3 : 2,
         borderColor: "transparent",
         flexDirection: "row",
         alignItems: "center",
         justifyContent: "center",
+        minWidth: isTV ? 120 : 80,
+        minHeight: isTV ? 56 : 44,
       },
       focusedButton: {
-        backgroundColor: colors.link,
-        borderColor: colors.background,
-        elevation: 5,
-        shadowColor: colors.link,
+        backgroundColor: "rgba(74, 158, 255, 0.2)",
+        borderColor: primaryColor,
+        elevation: 8,
+        shadowColor: primaryColor,
         shadowOffset: { width: 0, height: 0 },
-        shadowOpacity: 1,
-        shadowRadius: 15,
+        shadowOpacity: isTV ? 0.8 : 0.5,
+        shadowRadius: isTV ? 20 : 15,
       },
       selectedButton: {
-        backgroundColor: colors.tint,
+        backgroundColor: tintColor,
       },
       text: {
-        fontSize: 16,
-        fontWeight: "500",
-        color: colors.text,
+        fontSize: sizeStyles[size].textSize,
+        fontWeight: isTV ? "600" : "500",
+        color: textColor,
       },
       selectedText: {
         color: Colors.dark.text,
       },
     });
 
+    const androidRippleColor = isTV ? "rgba(74, 158, 255, 0.3)" : "rgba(255, 255, 255, 0.3)";
+
     return (
       <Animated.View style={[animationStyle, style]}>
         <Pressable
-          android_ripple={Platform.isTV || deviceType !== 'tv'? { color: 'transparent' } : { color: Colors.dark.link }}
+          android_ripple={{ color: androidRippleColor }}
           ref={ref}
           onFocus={() => setIsFocused(true)}
           onBlur={() => setIsFocused(false)}
-          style={({ focused }) => [
+          style={({ pressed }) => [
             styles.button,
             variantStyles[variant].button,
-            isSelected && (variantStyles[variant].selectedButton ?? styles.selectedButton),
-            focused && (variantStyles[variant].focusedButton ?? styles.focusedButton),
+            isSelected && variantStyles[variant].selectedButton,
+            isFocused && (variantStyles[variant].focusedButton || styles.focusedButton),
+            pressed && {
+              opacity: 0.8,
+              transform: [{ scale: 0.98 }],
+            },
           ]}
           {...rest}
         >
@@ -127,7 +201,8 @@ export const StyledButton = forwardRef<View, StyledButtonProps>(
               style={[
                 styles.text,
                 variantStyles[variant].text,
-                isSelected && (variantStyles[variant].selectedText ?? styles.selectedText),
+                isSelected && variantStyles[variant].selectedText,
+                isFocused && { color: Colors.dark.text },
                 textStyle,
               ]}
             >

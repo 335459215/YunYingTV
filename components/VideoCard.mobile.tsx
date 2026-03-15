@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, forwardRef } from "react";
+import React, { useState, useRef, forwardRef } from "react";
 import { View, Text, Image, StyleSheet, TouchableOpacity, Alert, Animated } from "react-native";
 import { useRouter } from "expo-router";
 import { Star, Play } from "lucide-react-native";
@@ -7,8 +7,8 @@ import { API } from "@/services/api";
 import { ThemedText } from "@/components/ThemedText";
 import { Colors } from "@/constants/Colors";
 import { useResponsiveLayout } from "@/hooks/useResponsiveLayout";
-import { DeviceUtils } from "@/utils/DeviceUtils";
 import Logger from '@/utils/Logger';
+import { useStaggeredFadeIn } from "@/hooks/useAnimation";
 
 const logger = Logger.withTag('VideoCardMobile');
 
@@ -27,6 +27,7 @@ interface VideoCardMobileProps extends React.ComponentProps<typeof TouchableOpac
   onFocus?: () => void;
   onRecordDeleted?: () => void;
   api: API;
+  index?: number;
 }
 
 const VideoCardMobile = forwardRef<View, VideoCardMobileProps>(
@@ -45,12 +46,17 @@ const VideoCardMobile = forwardRef<View, VideoCardMobileProps>(
       onRecordDeleted,
       api,
       playTime = 0,
+      index = 0,
     }: VideoCardMobileProps,
     ref
   ) => {
     const router = useRouter();
     const { cardWidth, cardHeight, spacing } = useResponsiveLayout();
-    const [fadeAnim] = useState(new Animated.Value(0));
+    
+    // 使用新的动画系统
+    const fadeInAnim = useStaggeredFadeIn(index, 40);
+    const [isPressed, setIsPressed] = useState(false);
+    const scaleAnim = useRef(new Animated.Value(1)).current;
 
     const longPressTriggered = useRef(false);
 
@@ -73,14 +79,25 @@ const VideoCardMobile = forwardRef<View, VideoCardMobileProps>(
       }
     };
 
-    useEffect(() => {
-      Animated.timing(fadeAnim, {
-        toValue: 1,
-        duration: DeviceUtils.getAnimationDuration(300),
-        delay: Math.random() * 100,
+    const handlePressIn = () => {
+      setIsPressed(true);
+      Animated.spring(scaleAnim, {
+        toValue: 0.95,
+        friction: 8,
+        tension: 100,
         useNativeDriver: true,
       }).start();
-    }, [fadeAnim]);
+    };
+
+    const handlePressOut = () => {
+      setIsPressed(false);
+      Animated.spring(scaleAnim, {
+        toValue: 1,
+        friction: 8,
+        tension: 100,
+        useNativeDriver: true,
+      }).start();
+    };
 
     const handleLongPress = () => {
       if (progress === undefined) return;
@@ -110,20 +127,45 @@ const VideoCardMobile = forwardRef<View, VideoCardMobileProps>(
 
     const isContinueWatching = progress !== undefined && progress > 0 && progress < 1;
 
+    const animatedStyle = {
+      transform: [{ scale: scaleAnim }],
+    };
+
     const styles = createMobileStyles(cardWidth, cardHeight, spacing);
 
     return (
-      <Animated.View style={[styles.wrapper, { opacity: fadeAnim }]} ref={ref}>
+      <Animated.View style={[styles.wrapper, fadeInAnim, animatedStyle]} ref={ref}>
         <TouchableOpacity
           onPress={handlePress}
+          onPressIn={handlePressIn}
+          onPressOut={handlePressOut}
           onLongPress={handleLongPress}
           style={styles.pressable}
-          activeOpacity={0.8}
+          activeOpacity={0.9}
           delayLongPress={800}
         >
-          <View style={styles.card}>
+          <View style={[styles.card, isPressed && styles.cardPressed]}>
             <Image source={{ uri: api.getImageProxyUrl(poster) }} style={styles.poster} />
             
+            {/* 渐变遮罩 */}
+            <View style={styles.gradientOverlay} />
+            
+            {/* 按压效果遮罩 */}
+            {isPressed && (
+              <View style={styles.pressOverlay}>
+                {isContinueWatching ? (
+                  <View style={styles.continueWatchingBadge}>
+                    <Play size={14} color="#ffffff" fill="#ffffff" />
+                    <Text style={styles.continueWatchingText}>继续</Text>
+                  </View>
+                ) : (
+                  <View style={styles.playButton}>
+                    <Play size={24} color="#ffffff" fill="#ffffff" />
+                  </View>
+                )}
+              </View>
+            )}
+
             {/* 进度条 */}
             {isContinueWatching && (
               <View style={styles.progressContainer}>
@@ -132,10 +174,10 @@ const VideoCardMobile = forwardRef<View, VideoCardMobileProps>(
             )}
 
             {/* 继续观看标识 */}
-            {isContinueWatching && (
-              <View style={styles.continueWatchingBadge}>
-                <Play size={12} color="#ffffff" fill="#ffffff" />
-                <Text style={styles.continueWatchingText}>继续</Text>
+            {isContinueWatching && !isPressed && (
+              <View style={styles.continueWatchingIndicator}>
+                <Play size={10} color="#ffffff" fill="#ffffff" />
+                <Text style={styles.continueWatchingIndicatorText}>继续</Text>
               </View>
             )}
 
@@ -166,7 +208,7 @@ const VideoCardMobile = forwardRef<View, VideoCardMobileProps>(
             <ThemedText numberOfLines={2} style={styles.title}>{title}</ThemedText>
             {isContinueWatching && (
               <ThemedText style={styles.continueLabel} numberOfLines={1}>
-                第{episodeIndex! + 1}集 {Math.round((progress || 0) * 100)}%
+                第{episodeIndex! + 1}集 · {Math.round((progress || 0) * 100)}%
               </ThemedText>
             )}
           </View>
@@ -182,7 +224,7 @@ const createMobileStyles = (cardWidth: number, cardHeight: number, spacing: numb
   return StyleSheet.create({
     wrapper: {
       width: cardWidth,
-      marginBottom: spacing,
+      marginBottom: spacing * 0.8,
     },
     pressable: {
       alignItems: 'flex-start',
@@ -190,39 +232,91 @@ const createMobileStyles = (cardWidth: number, cardHeight: number, spacing: numb
     card: {
       width: cardWidth,
       height: cardHeight,
-      borderRadius: 8,
-      backgroundColor: "#222",
+      borderRadius: 12,
+      backgroundColor: "#1a1a1a",
       overflow: "hidden",
+      shadowColor: "#000",
+      shadowOffset: { width: 0, height: 3 },
+      shadowOpacity: 0.3,
+      shadowRadius: 5,
+      elevation: 6,
+    },
+    cardPressed: {
+      shadowColor: Colors.dark.primary,
+      shadowOpacity: 0.4,
+      shadowRadius: 8,
+      elevation: 8,
     },
     poster: {
       width: "100%",
       height: "100%",
       resizeMode: 'cover',
     },
+    gradientOverlay: {
+      ...StyleSheet.absoluteFillObject,
+      backgroundColor: "rgba(0,0,0,0.05)",
+    },
+    pressOverlay: {
+      ...StyleSheet.absoluteFillObject,
+      backgroundColor: "rgba(0,0,0,0.5)",
+      justifyContent: "center",
+      alignItems: "center",
+      borderRadius: 12,
+    },
+    playButton: {
+      width: 48,
+      height: 48,
+      borderRadius: 24,
+      backgroundColor: "rgba(0, 187, 94, 0.9)",
+      justifyContent: "center",
+      alignItems: "center",
+      shadowColor: "#000",
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.3,
+      shadowRadius: 4,
+      elevation: 6,
+    },
     progressContainer: {
       position: "absolute",
       bottom: 0,
       left: 0,
       right: 0,
-      height: 3,
-      backgroundColor: "rgba(0, 0, 0, 0.6)",
+      height: 4,
+      backgroundColor: "rgba(0, 0, 0, 0.7)",
+      borderBottomLeftRadius: 12,
+      borderBottomRightRadius: 12,
+      overflow: "hidden",
     },
     progressBar: {
-      height: 3,
+      height: 4,
       backgroundColor: Colors.dark.primary,
     },
     continueWatchingBadge: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: Colors.dark.primary,
+      paddingHorizontal: 10,
+      paddingVertical: 5,
+      borderRadius: 8,
+    },
+    continueWatchingText: {
+      color: "white",
+      marginLeft: 4,
+      fontSize: 12,
+      fontWeight: "bold",
+    },
+    continueWatchingIndicator: {
       position: 'absolute',
-      top: 6,
-      left: 6,
+      top: 8,
+      left: 8,
       flexDirection: 'row',
       alignItems: 'center',
       backgroundColor: Colors.dark.primary,
       paddingHorizontal: 6,
       paddingVertical: 3,
-      borderRadius: 4,
+      borderRadius: 6,
     },
-    continueWatchingText: {
+    continueWatchingIndicatorText: {
       color: "white",
       marginLeft: 3,
       fontSize: 10,
@@ -230,57 +324,60 @@ const createMobileStyles = (cardWidth: number, cardHeight: number, spacing: numb
     },
     ratingContainer: {
       position: "absolute",
-      top: 6,
-      right: 6,
+      top: 8,
+      right: 8,
       flexDirection: "row",
       alignItems: "center",
-      backgroundColor: "rgba(0, 0, 0, 0.7)",
-      borderRadius: 4,
-      paddingHorizontal: 4,
-      paddingVertical: 2,
+      backgroundColor: "rgba(0, 0, 0, 0.85)",
+      borderRadius: 8,
+      paddingHorizontal: 6,
+      paddingVertical: 3,
     },
     ratingText: {
       color: "#FFD700",
-      fontSize: 10,
+      fontSize: 11,
       fontWeight: "bold",
-      marginLeft: 2,
+      marginLeft: 3,
     },
     yearBadge: {
       position: "absolute",
-      bottom: 24,
-      right: 6,
-      backgroundColor: "rgba(0, 0, 0, 0.7)",
-      borderRadius: 4,
-      paddingHorizontal: 4,
-      paddingVertical: 2,
+      bottom: 10,
+      right: 8,
+      backgroundColor: "rgba(0, 0, 0, 0.85)",
+      borderRadius: 6,
+      paddingHorizontal: 6,
+      paddingVertical: 3,
     },
     sourceNameBadge: {
       position: "absolute",
-      bottom: 6,
-      left: 6,
-      backgroundColor: "rgba(0, 0, 0, 0.7)",
-      borderRadius: 4,
-      paddingHorizontal: 4,
-      paddingVertical: 2,
+      bottom: 10,
+      left: 8,
+      backgroundColor: "rgba(0, 187, 94, 0.9)",
+      borderRadius: 6,
+      paddingHorizontal: 6,
+      paddingVertical: 3,
     },
     badgeText: {
       color: "white",
-      fontSize: 9,
-      fontWeight: "500",
+      fontSize: 10,
+      fontWeight: "700",
     },
     infoContainer: {
       width: cardWidth,
-      marginTop: 6,
+      marginTop: 10,
       paddingHorizontal: 2,
     },
     title: {
-      fontSize: 13,
-      lineHeight: 16,
-      marginBottom: 2,
+      fontSize: 14,
+      lineHeight: 19,
+      fontWeight: "600",
+      letterSpacing: 0.2,
     },
     continueLabel: {
       color: Colors.dark.primary,
-      fontSize: 11,
+      fontSize: 12,
+      marginTop: 3,
+      fontWeight: "500",
     },
   });
 };

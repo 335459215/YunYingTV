@@ -4,6 +4,7 @@ import { AVPlaybackStatus, Video } from "expo-av";
 import { RefObject } from "react";
 import { PlayRecord, PlayRecordManager, PlayerSettingsManager } from "@/services/storage";
 import useDetailStore, { episodesSelectorBySource } from "./detailStore";
+import { useSettingsStore } from "./settingsStore";
 import Logger from '@/utils/Logger';
 
 const logger = Logger.withTag('PlayerStore');
@@ -31,6 +32,11 @@ interface PlayerState {
   playbackRate: number;
   introEndTime?: number;
   outroStartTime?: number;
+  // 卡顿监测相关
+  bufferCount: number;
+  lastBufferTimestamp: number;
+  isSwitchingSource: boolean;
+  // 方法
   setVideoRef: (ref: RefObject<Video>) => void;
   loadVideo: (options: {
     source: string;
@@ -40,6 +46,8 @@ interface PlayerState {
     position?: number;
   }) => Promise<void>;
   playEpisode: (index: number) => void;
+  playNextEpisode: () => void;
+  playPreviousEpisode: () => void;
   togglePlayPause: () => void;
   seek: (duration: number) => void;
   handlePlaybackStatusUpdate: (newStatus: AVPlaybackStatus) => void;
@@ -55,6 +63,10 @@ interface PlayerState {
   reset: () => void;
   _seekTimeout?: NodeJS.Timeout;
   _isRecordSaveThrottled: boolean;
+  // 卡顿处理
+  _checkBufferStatus: () => void;
+  _handleBuffering: () => void;
+  _switchToBestSource: () => Promise<void>;
   // Internal helper
   _savePlayRecord: (updates?: Partial<PlayRecord>, options?: { immediate?: boolean }) => void;
   handleVideoError: (errorType: 'ssl' | 'network' | 'other', failedUrl: string) => Promise<void>;
@@ -78,6 +90,10 @@ const usePlayerStore = create<PlayerState>((set, get) => ({
   playbackRate: 1.0,
   introEndTime: undefined,
   outroStartTime: undefined,
+  // 卡顿监测相关
+  bufferCount: 0,
+  lastBufferTimestamp: 0,
+  isSwitchingSource: false,
   _seekTimeout: undefined,
   _isRecordSaveThrottled: false,
 
@@ -90,8 +106,15 @@ const usePlayerStore = create<PlayerState>((set, get) => ({
     let detail = useDetailStore.getState().detail;
     let episodes: string[] = [];
     
-    // 如果有detail，使用detail的source获取episodes；否则使用传入的source
-    if (detail && detail.source) {
+    // 尝试获取最佳影视源
+    const bestSource = useDetailStore.getState().getBestSource(episodeIndex);
+    if (bestSource) {
+      logger.info(`[INFO] Using best source "${bestSource.source_name}" based on speed test`);
+      // 更新DetailStore的当前detail为最佳源
+      await useDetailStore.getState().setDetail(bestSource);
+      detail = bestSource;
+      episodes = bestSource.episodes || [];
+    } else if (detail && detail.source) {
       logger.info(`[INFO] Using existing detail source "${detail.source}" to get episodes`);
       episodes = episodesSelectorBySource(detail.source)(useDetailStore.getState());
     } else {
@@ -205,7 +228,8 @@ const usePlayerStore = create<PlayerState>((set, get) => ({
       logger.info(`[PERF] Total storage operations took ${(storageEnd - storageStart).toFixed(2)}ms`);
       
       const initialPositionFromRecord = playRecord?.play_time ? playRecord.play_time * 1000 : 0;
-      const savedPlaybackRate = playerSettings?.playbackRate || 1.0;
+      // 优先从 playRecord 中获取播放速度，如果没有则从 playerSettings 中获取，默认值为 1.0
+      const savedPlaybackRate = playRecord?.playbackRate || playerSettings?.playbackRate || 1.0;
       
       const episodesMappingStart = performance.now();
       const mappedEpisodes = episodes.map((ep, index) => ({
@@ -253,6 +277,20 @@ const usePlayerStore = create<PlayerState>((set, get) => ({
         logger.debug("Failed to replay video:", error);
         Toast.show({ type: "error", text1: "播放失败" });
       }
+    }
+  },
+
+  playNextEpisode: () => {
+    const { currentEpisodeIndex, episodes } = get();
+    if (currentEpisodeIndex < episodes.length - 1) {
+      get().playEpisode(currentEpisodeIndex + 1);
+    }
+  },
+
+  playPreviousEpisode: () => {
+    const { currentEpisodeIndex } = get();
+    if (currentEpisodeIndex > 0) {
+      get().playEpisode(currentEpisodeIndex - 1);
     }
   },
 
@@ -362,11 +400,12 @@ const usePlayerStore = create<PlayerState>((set, get) => ({
     }
 
     const { detail } = useDetailStore.getState();
-    const { currentEpisodeIndex, episodes, status, introEndTime, outroStartTime } = get();
+    const { currentEpisodeIndex, episodes, status, introEndTime, outroStartTime, playbackRate } = get();
     if (detail && status?.isLoaded) {
       const existingRecord = {
         introEndTime,
         outroStartTime,
+        playbackRate, // 保存播放速度
       };
       PlayRecordManager.save(detail.source, detail.id.toString(), {
         title: detail.title,
@@ -390,6 +429,11 @@ const usePlayerStore = create<PlayerState>((set, get) => ({
       }
       set({ status: newStatus });
       return;
+    }
+    
+    // 监测缓冲状态
+    if (newStatus.isBuffering) {
+      get()._handleBuffering();
     }
 
     const { currentEpisodeIndex, episodes, outroStartTime, playEpisode } = get();
@@ -466,7 +510,119 @@ const usePlayerStore = create<PlayerState>((set, get) => ({
       playbackRate: 1.0,
       introEndTime: undefined,
       outroStartTime: undefined,
+      // 重置卡顿监测相关字段
+      bufferCount: 0,
+      lastBufferTimestamp: 0,
+      isSwitchingSource: false,
     });
+  },
+
+  // 检查缓冲状态，判断是否卡顿严重
+  _checkBufferStatus: () => {
+    const { bufferCount, lastBufferTimestamp } = get();
+    const now = Date.now();
+    
+    // 检查是否启用自动切换源
+    const { autoSwitchSource } = useSettingsStore.getState();
+    if (!autoSwitchSource) {
+      logger.info(`[BUFFERING] Auto switch source is disabled, skipping`);
+      return;
+    }
+    
+    // 检查是否在10秒内缓冲次数≥3次
+    if (now - lastBufferTimestamp <= 10000 && bufferCount >= 3) {
+      logger.warn(`[BUFFERING] Severe buffering detected: ${bufferCount} buffers in 10 seconds`);
+      // 触发源切换
+      get()._switchToBestSource();
+    }
+  },
+
+  // 处理缓冲事件
+  _handleBuffering: () => {
+    const { bufferCount, lastBufferTimestamp } = get();
+    const now = Date.now();
+    
+    // 如果超过10秒，重置计数
+    if (now - lastBufferTimestamp > 10000) {
+      set({ bufferCount: 1, lastBufferTimestamp: now });
+    } else {
+      // 否则增加计数
+      set({ bufferCount: bufferCount + 1 });
+    }
+    
+    // 检查缓冲状态
+    get()._checkBufferStatus();
+  },
+
+  // 切换到最佳影视源
+  _switchToBestSource: async () => {
+    const { isSwitchingSource, currentEpisodeIndex } = get();
+    
+    // 避免重复切换
+    if (isSwitchingSource) {
+      logger.info(`[SOURCE_SWITCH] Already switching source, skipping`);
+      return;
+    }
+    
+    set({ isSwitchingSource: true, isLoading: true });
+    
+    try {
+      // 重新测速，获取最新的速度数据
+      logger.info(`[SOURCE_SWITCH] Re-testing sources speed`);
+      await useDetailStore.getState().testSourcesSpeed();
+      
+      // 获取最佳源
+      const bestSource = useDetailStore.getState().getBestSource(currentEpisodeIndex);
+      
+      if (!bestSource) {
+        logger.error(`[SOURCE_SWITCH] No best source found`);
+        set({ isSwitchingSource: false, isLoading: false });
+        return;
+      }
+      
+      const currentSource = useDetailStore.getState().detail?.source;
+      if (bestSource.source === currentSource) {
+        logger.info(`[SOURCE_SWITCH] Best source is same as current, no need to switch`);
+        set({ isSwitchingSource: false, isLoading: false });
+        return;
+      }
+      
+      logger.info(`[SOURCE_SWITCH] Switching to best source: ${bestSource.source_name}`);
+      
+      // 更新DetailStore的当前detail为最佳源
+      await useDetailStore.getState().setDetail(bestSource);
+      
+      // 重新加载当前集数的episodes
+      const newEpisodes = bestSource.episodes || [];
+      if (newEpisodes.length > currentEpisodeIndex) {
+        const mappedEpisodes = newEpisodes.map((ep, index) => ({
+          url: ep,
+          title: `第 ${index + 1} 集`,
+        }));
+        
+        set({
+          episodes: mappedEpisodes,
+          isLoading: false,
+          isSwitchingSource: false,
+          // 重置卡顿监测
+          bufferCount: 0,
+          lastBufferTimestamp: 0,
+        });
+        
+        logger.info(`[SOURCE_SWITCH] Successfully switched to source: ${bestSource.source_name}`);
+        Toast.show({ 
+          type: "success", 
+          text1: "已切换播放源", 
+          text2: `正在使用 ${bestSource.source_name}` 
+        });
+      } else {
+        logger.error(`[SOURCE_SWITCH] Best source doesn't have episode ${currentEpisodeIndex + 1}`);
+        set({ isSwitchingSource: false, isLoading: false });
+      }
+    } catch (error) {
+      logger.error(`[SOURCE_SWITCH] Failed to switch source:`, error);
+      set({ isSwitchingSource: false, isLoading: false });
+    }
   },
 
   handleVideoError: async (errorType: 'ssl' | 'network' | 'other', failedUrl: string) => {

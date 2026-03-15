@@ -5,11 +5,12 @@ import { Home, Search, Heart, Settings, Tv } from 'lucide-react-native';
 import { Colors } from '@/constants/Colors';
 import { useResponsiveLayout } from '@/hooks/useResponsiveLayout';
 import { DeviceUtils } from '@/utils/DeviceUtils';
+import type { IconComponentType } from '@/types/common';
 
 interface TabItem {
   key: string;
   label: string;
-  icon: React.ComponentType<any>;
+  icon: IconComponentType;
   route: string;
 }
 
@@ -26,17 +27,12 @@ const MobileBottomTabNavigator: React.FC = () => {
   const pathname = usePathname();
   const { spacing, deviceType } = useResponsiveLayout();
   
-  // 在手机端过滤掉直播 tab
   const filteredTabs = tabs.filter(tab => 
     deviceType !== 'mobile' || tab.key !== 'live'
   );
   
   const handleTabPress = (route: string) => {
-    if (route === '/') {
-      router.push('/');
-    } else {
-      router.push(route as any);
-    }
+    router.push(route as never);
   };
 
   const isTabActive = (route: string) => {

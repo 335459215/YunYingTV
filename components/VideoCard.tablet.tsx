@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef, forwardRef } from "react";
+import React, { useState, useCallback, useRef, forwardRef } from "react";
 import { View, Text, Image, StyleSheet, TouchableOpacity, Alert, Animated } from "react-native";
 import { useRouter } from "expo-router";
 import { Star, Play } from "lucide-react-native";
@@ -7,8 +7,8 @@ import { API } from "@/services/api";
 import { ThemedText } from "@/components/ThemedText";
 import { Colors } from "@/constants/Colors";
 import { useResponsiveLayout } from "@/hooks/useResponsiveLayout";
-import { DeviceUtils } from "@/utils/DeviceUtils";
 import Logger from '@/utils/Logger';
+import { useStaggeredFadeIn } from "@/hooks/useAnimation";
 
 const logger = Logger.withTag('VideoCardTablet');
 
@@ -27,6 +27,7 @@ interface VideoCardTabletProps extends React.ComponentProps<typeof TouchableOpac
   onFocus?: () => void;
   onRecordDeleted?: () => void;
   api: API;
+  index?: number;
 }
 
 const VideoCardTablet = forwardRef<View, VideoCardTabletProps>(
@@ -45,16 +46,19 @@ const VideoCardTablet = forwardRef<View, VideoCardTabletProps>(
       onRecordDeleted,
       api,
       playTime = 0,
+      index = 0,
     }: VideoCardTabletProps,
     ref
   ) => {
     const router = useRouter();
     const { cardWidth, cardHeight, spacing } = useResponsiveLayout();
-    const [fadeAnim] = useState(new Animated.Value(0));
+    
+    // 使用新的动画系统
+    const fadeInAnim = useStaggeredFadeIn(index, 50);
     const [isPressed, setIsPressed] = useState(false);
+    const scaleAnim = useRef(new Animated.Value(1)).current;
 
     const longPressTriggered = useRef(false);
-    const scale = useRef(new Animated.Value(1)).current;
 
     const handlePress = () => {
       if (longPressTriggered.current) {
@@ -77,32 +81,23 @@ const VideoCardTablet = forwardRef<View, VideoCardTabletProps>(
 
     const handlePressIn = useCallback(() => {
       setIsPressed(true);
-      Animated.spring(scale, {
+      Animated.spring(scaleAnim, {
         toValue: 0.96,
-        damping: 15,
-        stiffness: 300,
+        friction: 8,
+        tension: 120,
         useNativeDriver: true,
       }).start();
-    }, [scale]);
+    }, [scaleAnim]);
 
     const handlePressOut = useCallback(() => {
       setIsPressed(false);
-      Animated.spring(scale, {
-        toValue: 1.0,
-        damping: 15,
-        stiffness: 300,
-        useNativeDriver: true,
-      }).start();
-    }, [scale]);
-
-    useEffect(() => {
-      Animated.timing(fadeAnim, {
+      Animated.spring(scaleAnim, {
         toValue: 1,
-        duration: DeviceUtils.getAnimationDuration(400),
-        delay: Math.random() * 150,
+        friction: 8,
+        tension: 120,
         useNativeDriver: true,
       }).start();
-    }, [fadeAnim]);
+    }, [scaleAnim]);
 
     const handleLongPress = () => {
       if (progress === undefined) return;
@@ -133,32 +128,39 @@ const VideoCardTablet = forwardRef<View, VideoCardTabletProps>(
     const isContinueWatching = progress !== undefined && progress > 0 && progress < 1;
 
     const animatedStyle = {
-      transform: [{ scale }],
+      transform: [{ scale: scaleAnim }],
     };
 
     const styles = createTabletStyles(cardWidth, cardHeight, spacing);
 
     return (
-      <Animated.View style={[styles.wrapper, animatedStyle, { opacity: fadeAnim }]} ref={ref}>
+      <Animated.View style={[styles.wrapper, fadeInAnim, animatedStyle]} ref={ref}>
         <TouchableOpacity
           onPress={handlePress}
           onPressIn={handlePressIn}
           onPressOut={handlePressOut}
           onLongPress={handleLongPress}
           style={styles.pressable}
-          activeOpacity={1}
-          delayLongPress={900}
+          activeOpacity={0.9}
+          delayLongPress={800}
         >
           <View style={[styles.card, isPressed && styles.cardPressed]}>
             <Image source={{ uri: api.getImageProxyUrl(poster) }} style={styles.poster} />
             
-            {/* 悬停效果遮罩 */}
+            {/* 渐变遮罩 */}
+            <View style={styles.gradientOverlay} />
+            
+            {/* 按压效果遮罩 */}
             {isPressed && (
               <View style={styles.pressOverlay}>
-                {isContinueWatching && (
+                {isContinueWatching ? (
                   <View style={styles.continueWatchingBadge}>
-                    <Play size={16} color="#ffffff" fill="#ffffff" />
+                    <Play size={18} color="#ffffff" fill="#ffffff" />
                     <Text style={styles.continueWatchingText}>继续观看</Text>
+                  </View>
+                ) : (
+                  <View style={styles.playButton}>
+                    <Play size={32} color="#ffffff" fill="#ffffff" />
                   </View>
                 )}
               </View>
@@ -168,6 +170,14 @@ const VideoCardTablet = forwardRef<View, VideoCardTabletProps>(
             {isContinueWatching && (
               <View style={styles.progressContainer}>
                 <View style={[styles.progressBar, { width: `${(progress || 0) * 100}%` }]} />
+              </View>
+            )}
+
+            {/* 继续观看标识 */}
+            {isContinueWatching && !isPressed && (
+              <View style={styles.continueWatchingIndicator}>
+                <Play size={12} color="#ffffff" fill="#ffffff" />
+                <Text style={styles.continueWatchingIndicatorText}>继续</Text>
               </View>
             )}
 
@@ -199,7 +209,7 @@ const VideoCardTablet = forwardRef<View, VideoCardTabletProps>(
             {isContinueWatching && (
               <View style={styles.infoRow}>
                 <ThemedText style={styles.continueLabel} numberOfLines={1}>
-                  第{episodeIndex! + 1}集 已观看 {Math.round((progress || 0) * 100)}%
+                  第{episodeIndex! + 1}集 · {Math.round((progress || 0) * 100)}%
                 </ThemedText>
               </View>
             )}
@@ -225,45 +235,72 @@ const createTabletStyles = (cardWidth: number, cardHeight: number, spacing: numb
     card: {
       width: cardWidth,
       height: cardHeight,
-      borderRadius: 10,
-      backgroundColor: "#222",
+      borderRadius: 14,
+      backgroundColor: "#1a1a1a",
       overflow: "hidden",
+      shadowColor: "#000",
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.3,
+      shadowRadius: 6,
+      elevation: 8,
     },
     cardPressed: {
-      borderColor: Colors.dark.primary,
-      borderWidth: 2,
+      shadowColor: Colors.dark.primary,
+      shadowOpacity: 0.4,
+      shadowRadius: 10,
+      elevation: 10,
     },
     poster: {
       width: "100%",
       height: "100%",
       resizeMode: 'cover',
     },
+    gradientOverlay: {
+      ...StyleSheet.absoluteFillObject,
+      backgroundColor: "rgba(0,0,0,0.05)",
+    },
     pressOverlay: {
       ...StyleSheet.absoluteFillObject,
-      backgroundColor: "rgba(0,0,0,0.4)",
+      backgroundColor: "rgba(0,0,0,0.45)",
       justifyContent: "center",
       alignItems: "center",
-      borderRadius: 10,
+      borderRadius: 14,
+    },
+    playButton: {
+      width: 56,
+      height: 56,
+      borderRadius: 28,
+      backgroundColor: "rgba(0, 187, 94, 0.9)",
+      justifyContent: "center",
+      alignItems: "center",
+      shadowColor: "#000",
+      shadowOffset: { width: 0, height: 3 },
+      shadowOpacity: 0.3,
+      shadowRadius: 6,
+      elevation: 8,
     },
     progressContainer: {
       position: "absolute",
       bottom: 0,
       left: 0,
       right: 0,
-      height: 4,
-      backgroundColor: "rgba(0, 0, 0, 0.8)",
+      height: 5,
+      backgroundColor: "rgba(0, 0, 0, 0.75)",
+      borderBottomLeftRadius: 14,
+      borderBottomRightRadius: 14,
+      overflow: "hidden",
     },
     progressBar: {
-      height: 4,
+      height: 5,
       backgroundColor: Colors.dark.primary,
     },
     continueWatchingBadge: {
       flexDirection: "row",
       alignItems: "center",
       backgroundColor: Colors.dark.primary,
-      paddingHorizontal: 12,
-      paddingVertical: 6,
-      borderRadius: 6,
+      paddingHorizontal: 14,
+      paddingVertical: 7,
+      borderRadius: 10,
     },
     continueWatchingText: {
       color: "white",
@@ -271,49 +308,66 @@ const createTabletStyles = (cardWidth: number, cardHeight: number, spacing: numb
       fontSize: 14,
       fontWeight: "bold",
     },
+    continueWatchingIndicator: {
+      position: 'absolute',
+      top: 10,
+      left: 10,
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: Colors.dark.primary,
+      paddingHorizontal: 8,
+      paddingVertical: 4,
+      borderRadius: 8,
+    },
+    continueWatchingIndicatorText: {
+      color: "white",
+      marginLeft: 4,
+      fontSize: 11,
+      fontWeight: "bold",
+    },
     ratingContainer: {
       position: "absolute",
-      top: 8,
-      right: 8,
+      top: 10,
+      right: 10,
       flexDirection: "row",
       alignItems: "center",
-      backgroundColor: "rgba(0, 0, 0, 0.7)",
-      borderRadius: 6,
-      paddingHorizontal: 6,
-      paddingVertical: 3,
+      backgroundColor: "rgba(0, 0, 0, 0.85)",
+      borderRadius: 10,
+      paddingHorizontal: 8,
+      paddingVertical: 4,
     },
     ratingText: {
       color: "#FFD700",
-      fontSize: 11,
+      fontSize: 12,
       fontWeight: "bold",
-      marginLeft: 3,
+      marginLeft: 4,
     },
     yearBadge: {
       position: "absolute",
-      top: 8,
-      right: 8,
-      backgroundColor: "rgba(0, 0, 0, 0.7)",
-      borderRadius: 6,
-      paddingHorizontal: 6,
-      paddingVertical: 3,
+      bottom: 12,
+      right: 10,
+      backgroundColor: "rgba(0, 0, 0, 0.85)",
+      borderRadius: 8,
+      paddingHorizontal: 8,
+      paddingVertical: 4,
     },
     sourceNameBadge: {
       position: "absolute",
-      top: 8,
-      left: 8,
-      backgroundColor: "rgba(0, 0, 0, 0.7)",
-      borderRadius: 6,
-      paddingHorizontal: 6,
-      paddingVertical: 3,
+      bottom: 12,
+      left: 10,
+      backgroundColor: "rgba(0, 187, 94, 0.9)",
+      borderRadius: 8,
+      paddingHorizontal: 8,
+      paddingVertical: 4,
     },
     badgeText: {
       color: "white",
       fontSize: 11,
-      fontWeight: "bold",
+      fontWeight: "700",
     },
     infoContainer: {
       width: cardWidth,
-      marginTop: 8,
+      marginTop: 10,
       alignItems: "flex-start",
       paddingHorizontal: 4,
     },
@@ -321,15 +375,18 @@ const createTabletStyles = (cardWidth: number, cardHeight: number, spacing: numb
       flexDirection: "row",
       justifyContent: "space-between",
       width: "100%",
-      marginTop: 2,
+      marginTop: 4,
     },
     title: {
       fontSize: 15,
-      lineHeight: 18,
+      lineHeight: 20,
+      fontWeight: "600",
+      letterSpacing: 0.2,
     },
     continueLabel: {
       color: Colors.dark.primary,
-      fontSize: 12,
+      fontSize: 13,
+      fontWeight: "500",
     },
   });
 };

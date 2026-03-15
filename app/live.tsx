@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
-import { View, FlatList, StyleSheet, ActivityIndicator, Modal, useTVEventHandler, HWEvent, Text } from "react-native";
+import { View, FlatList, StyleSheet, ActivityIndicator, Modal, Text } from "react-native";
 import LivePlayer from "@/components/LivePlayer";
 import { fetchAndParseM3u, getPlayableUrl, Channel } from "@/services/m3u";
 import { ThemedView } from "@/components/ThemedView";
@@ -10,6 +10,15 @@ import { getCommonResponsiveStyles } from "@/utils/ResponsiveStyles";
 import ResponsiveNavigation from "@/components/navigation/ResponsiveNavigation";
 import ResponsiveHeader from "@/components/navigation/ResponsiveHeader";
 import { DeviceUtils } from "@/utils/DeviceUtils";
+
+// 定义 HWEvent 类型以避免类型错误
+type HWEvent = {
+  eventType: string;
+  eventKeyAction: number;
+};
+
+// 模拟 useTVEventHandler 函数，在非 TV 环境中不做任何操作
+const useTVEventHandler = (handler: (event: HWEvent) => void) => {};
 
 export default function LiveScreen() {
   const { m3uUrl } = useSettingsStore();

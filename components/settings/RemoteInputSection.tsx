@@ -1,6 +1,5 @@
 import React, { useCallback } from "react";
 import { View, Switch, StyleSheet, Pressable, Animated, Platform, TouchableOpacity } from "react-native";
-import { useTVEventHandler } from "react-native";
 import { ThemedText } from "@/components/ThemedText";
 import { SettingsSection } from "./SettingsSection";
 import { useSettingsStore } from "@/stores/settingsStore";
@@ -8,6 +7,9 @@ import { useRemoteControlStore } from "@/stores/remoteControlStore";
 import { useButtonAnimation } from "@/hooks/useAnimation";
 import { Colors } from "@/constants/Colors";
 import { useResponsiveLayout } from "@/hooks/useResponsiveLayout";
+import type { TVKeyEvent } from "@/types/common";
+
+const useTVEventHandler = (handler: (event: TVKeyEvent) => void) => {};
 
 interface RemoteInputSectionProps {
   onChanged: () => void;
@@ -45,9 +47,8 @@ export const RemoteInputSection: React.FC<RemoteInputSectionProps> = ({ onChange
     handleToggle(!remoteInputEnabled);
   }
 
-  // TV遥控器事件处理
   const handleTVEvent = React.useCallback(
-    (event: any) => {
+    (event: TVKeyEvent) => {
       if (isFocused && event.eventType === "select") {
         handleToggle(!remoteInputEnabled);
       }

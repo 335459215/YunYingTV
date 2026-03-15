@@ -61,6 +61,7 @@ export interface PlayRecord {
   total_time: number;
   save_time: number;
   year: string;
+  playbackRate?: number; // 播放速度
 }
 
 export interface ApiSite {
@@ -221,7 +222,7 @@ export class API {
     const url = `/api/search/one?q=${encodeURIComponent(query)}&resourceId=${encodeURIComponent(resourceId)}`;
     const response = await this._fetch(url, { signal });
     const { results } = await response.json();
-    return { results: results.filter((item: any) => item.title === query )};
+    return { results: results.filter((item: SearchResult) => item.title === query )};
   }
 
   async getResources(signal?: AbortSignal): Promise<ApiSite[]> {

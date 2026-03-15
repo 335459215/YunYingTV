@@ -1,26 +1,29 @@
 import React, { useState, useEffect, useRef } from "react";
-import { View, StyleSheet, Alert, Platform } from "react-native";
-import { useTVEventHandler } from "react-native";
+import { View, StyleSheet, Alert, Platform, TextInput } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
+import Toast from "react-native-toast-message";
 import { ThemedText } from "@/components/ThemedText";
 import { ThemedView } from "@/components/ThemedView";
 import { StyledButton } from "@/components/StyledButton";
-import { useThemeColor } from "@/hooks/useThemeColor";
-import { useSettingsStore } from "@/stores/settingsStore";
-// import useAuthStore from "@/stores/authStore";
-import { useRemoteControlStore } from "@/stores/remoteControlStore";
-import { APIConfigSection } from "@/components/settings/APIConfigSection";
-import { LiveStreamSection } from "@/components/settings/LiveStreamSection";
+import { AutoContinueSection } from "@/components/settings/AutoContinueSection";
+import { LiveStreamSection, LiveStreamSectionRef } from "@/components/settings/LiveStreamSection";
 import { RemoteInputSection } from "@/components/settings/RemoteInputSection";
+import { ServerManagerSection } from "@/components/settings/ServerManagerSection";
+import { AccountManagerSection } from "@/components/settings/AccountManagerSection";
+import { LoginSection } from "@/components/settings/LoginSection";
 import { UpdateSection } from "@/components/settings/UpdateSection";
-// import { VideoSourceSection } from "@/components/settings/VideoSourceSection";
-import Toast from "react-native-toast-message";
-import { useResponsiveLayout } from "@/hooks/useResponsiveLayout";
-import { getCommonResponsiveStyles } from "@/utils/ResponsiveStyles";
 import ResponsiveNavigation from "@/components/navigation/ResponsiveNavigation";
 import ResponsiveHeader from "@/components/navigation/ResponsiveHeader";
+import { useThemeColor } from "@/hooks/useThemeColor";
+import { useResponsiveLayout } from "@/hooks/useResponsiveLayout";
+import { useSettingsStore } from "@/stores/settingsStore";
+import { useRemoteControlStore } from "@/stores/remoteControlStore";
+import { getCommonResponsiveStyles } from "@/utils/ResponsiveStyles";
 import { DeviceUtils } from "@/utils/DeviceUtils";
-import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
+import type { TVKeyEvent, InsetsLike } from "@/types/common";
+
+const useTVEventHandler = (handler: (event: TVKeyEvent) => void) => {};
 
 type SectionItem = {
   component: React.ReactElement;
@@ -35,7 +38,7 @@ function isSectionItem(
 }
 
 export default function SettingsScreen() {
-  const { loadSettings, saveSettings, setApiBaseUrl, setM3uUrl } = useSettingsStore();
+  const { loadSettings, saveSettings, setM3uUrl } = useSettingsStore();
   const { lastMessage, targetPage, clearMessage } = useRemoteControlStore();
   const backgroundColor = useThemeColor({}, "background");
   const insets = useSafeAreaInsets();
@@ -50,9 +53,8 @@ export default function SettingsScreen() {
   const [currentFocusIndex, setCurrentFocusIndex] = useState(0);
   const [currentSection, setCurrentSection] = useState<string | null>(null);
 
-  const saveButtonRef = useRef<any>(null);
-  const apiSectionRef = useRef<any>(null);
-  const liveStreamSectionRef = useRef<any>(null);
+  const saveButtonRef = useRef<TextInput>(null);
+  const liveStreamSectionRef = useRef<LiveStreamSectionRef>(null);
 
   useEffect(() => {
     loadSettings();
@@ -70,10 +72,7 @@ export default function SettingsScreen() {
 
   const handleRemoteInput = (message: string) => {
     // Handle remote input based on currently focused section
-    if (currentSection === "api" && apiSectionRef.current) {
-      // API Config Section
-      setApiBaseUrl(message);
-    } else if (currentSection === "livestream" && liveStreamSectionRef.current) {
+    if (currentSection === "livestream" && liveStreamSectionRef.current) {
       // Live Stream Section
       setM3uUrl(message);
     }
@@ -173,17 +172,51 @@ export default function SettingsScreen() {
     },
     {
       component: (
-        <APIConfigSection
-          ref={apiSectionRef}
+        <AutoContinueSection
           onChanged={markAsChanged}
-          hideDescription={deviceType === "mobile"}
           onFocus={() => {
             setCurrentFocusIndex(1);
-            setCurrentSection("api");
+            setCurrentSection("autoContinue");
           }}
         />
       ),
-      key: "api",
+      key: "autoContinue",
+    },
+    {
+      component: (
+        <ServerManagerSection
+          onChanged={markAsChanged}
+          onFocus={() => {
+            setCurrentFocusIndex(2);
+            setCurrentSection("server");
+          }}
+        />
+      ),
+      key: "server",
+    },
+    {
+      component: (
+        <AccountManagerSection
+          onChanged={markAsChanged}
+          onFocus={() => {
+            setCurrentFocusIndex(3);
+            setCurrentSection("account");
+          }}
+        />
+      ),
+      key: "account",
+    },
+    {
+      component: (
+        <LoginSection
+          onChanged={markAsChanged}
+          onFocus={() => {
+            setCurrentFocusIndex(4);
+            setCurrentSection("login");
+          }}
+        />
+      ),
+      key: "login",
     },
     deviceType !== "mobile" && {
       component: (
@@ -191,7 +224,7 @@ export default function SettingsScreen() {
           ref={liveStreamSectionRef}
           onChanged={markAsChanged}
           onFocus={() => {
-            setCurrentFocusIndex(2);
+            setCurrentFocusIndex(6);
             setCurrentSection("livestream");
           }}
         />
@@ -209,7 +242,7 @@ export default function SettingsScreen() {
 
   // TV遥控器事件处理 - 仅在TV设备上启用
   const handleTVEvent = React.useCallback(
-    (event: any) => {
+    (event: TVKeyEvent) => {
       if (deviceType !== "tv") return;
 
       if (event.eventType === "down") {
@@ -299,7 +332,7 @@ export default function SettingsScreen() {
   );
 }
 
-const createResponsiveStyles = (deviceType: string, spacing: number, insets: any) => {
+const createResponsiveStyles = (deviceType: string, spacing: number, insets: InsetsLike) => {
   const isMobile = deviceType === "mobile";
   const isTablet = deviceType === "tablet";
   const isTV = deviceType === "tv";

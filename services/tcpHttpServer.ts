@@ -19,6 +19,17 @@ interface HttpResponse {
   body: string;
 }
 
+interface NetworkDetails {
+  ipAddress?: string;
+  subnet?: string;
+  broadcast?: string;
+  isConnectionExpensive?: boolean;
+  ssid?: string;
+  bssid?: string;
+  strength?: number;
+  frequency?: number;
+}
+
 type RequestHandler = (request: HttpRequest) => HttpResponse | Promise<HttpResponse>;
 
 class TCPHttpServer {
@@ -103,7 +114,7 @@ class TCPHttpServer {
     let ipAddress: string | null = null;
     
     if (netState.type === 'wifi' || netState.type === 'ethernet') {
-      ipAddress = (netState.details as any)?.ipAddress ?? null;
+      ipAddress = (netState.details as NetworkDetails)?.ipAddress ?? null;
     }
 
     if (!ipAddress) {

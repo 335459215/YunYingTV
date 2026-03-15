@@ -1,16 +1,16 @@
-import React, { useState } from 'react';
-import { View, StyleSheet, TouchableOpacity, Text, ScrollView } from 'react-native';
+import React, { useState, useCallback, useEffect } from 'react';
+import { View, StyleSheet, TouchableOpacity, Text, ScrollView, Animated } from 'react-native';
 import { useRouter, usePathname } from 'expo-router';
 import { Home, Search, Heart, Settings, Tv, Menu, X } from 'lucide-react-native';
 import { Colors } from '@/constants/Colors';
-import { useResponsiveLayout } from '@/hooks/useResponsiveLayout';
-import { DeviceUtils } from '@/utils/DeviceUtils';
+import { useResponsiveLayout, useResponsiveStyles } from '@/hooks/useResponsiveLayout';
 import { ThemedText } from '@/components/ThemedText';
+import type { IconComponentType } from '@/types/common';
 
 interface SidebarItem {
   key: string;
   label: string;
-  icon: React.ComponentType<any>;
+  icon: IconComponentType;
   route: string;
   section?: string;
 }
@@ -37,30 +37,52 @@ const TabletSidebarNavigator: React.FC<TabletSidebarNavigatorProps> = ({
   const router = useRouter();
   const pathname = usePathname();
   const { spacing, isPortrait } = useResponsiveLayout();
+  const responsiveStyles = useResponsiveStyles();
   
-  const [internalCollapsed, setInternalCollapsed] = useState(false);
+  const [internalCollapsed, setInternalCollapsed] = useState(() => {
+    return isPortrait;
+  });
   
-  // 使用外部控制的collapsed状态，如果没有则使用内部状态
+  const [sidebarAnimation] = useState(new Animated.Value(isPortrait ? 60 : 200));
+  
+  useEffect(() => {
+    if (!controlledCollapsed) {
+      const newCollapsedState = isPortrait;
+      if (newCollapsedState !== internalCollapsed) {
+        setInternalCollapsed(newCollapsedState);
+        
+        Animated.timing(sidebarAnimation, {
+          toValue: newCollapsedState ? 60 : 200,
+          duration: 300,
+          useNativeDriver: false,
+        }).start();
+      }
+    }
+  }, [isPortrait, controlledCollapsed, internalCollapsed, sidebarAnimation]);
+  
   const collapsed = controlledCollapsed !== undefined ? controlledCollapsed : internalCollapsed;
   
-  const handleToggleCollapse = () => {
+  const handleToggleCollapse = useCallback(() => {
+    const newCollapsedState = !collapsed;
+    
+    Animated.timing(sidebarAnimation, {
+      toValue: newCollapsedState ? 60 : 200,
+      duration: 300,
+      useNativeDriver: false,
+    }).start();
+    
     if (onToggleCollapse) {
-      onToggleCollapse(!collapsed);
+      onToggleCollapse(newCollapsedState);
     } else {
-      setInternalCollapsed(!collapsed);
+      setInternalCollapsed(newCollapsedState);
     }
-  };
+  }, [collapsed, onToggleCollapse, sidebarAnimation]);
 
   const handleItemPress = (route: string) => {
-    if (route === '/') {
-      router.push('/');
-    } else {
-      router.push(route as any);
-    }
+    router.push(route as never);
     
-    // 在竖屏模式下，导航后自动折叠侧边栏
     if (isPortrait && !controlledCollapsed) {
-      setInternalCollapsed(true);
+      handleToggleCollapse();
     }
   };
 
@@ -71,7 +93,7 @@ const TabletSidebarNavigator: React.FC<TabletSidebarNavigatorProps> = ({
   };
 
   const sidebarWidth = collapsed ? 60 : 200;
-  const dynamicStyles = createStyles(spacing, sidebarWidth, isPortrait);
+  const dynamicStyles = createStyles(spacing, sidebarWidth, isPortrait, responsiveStyles.minTouchTarget);
 
   const renderSidebarItems = () => {
     const sections = ['main', 'user'];
@@ -96,9 +118,12 @@ const TabletSidebarNavigator: React.FC<TabletSidebarNavigatorProps> = ({
                 style={[dynamicStyles.sidebarItem, isActive && dynamicStyles.activeSidebarItem]}
                 onPress={() => handleItemPress(item.route)}
                 activeOpacity={0.7}
+                accessibilityLabel={item.label}
+                accessibilityRole="button"
+                accessibilityState={{ selected: isActive }}
               >
                 <IconComponent
-                  size={20}
+                  size={isActive ? 22 : 20}
                   color={isActive ? Colors.dark.primary : '#ccc'}
                   strokeWidth={isActive ? 2.5 : 2}
                 />
@@ -120,14 +145,22 @@ const TabletSidebarNavigator: React.FC<TabletSidebarNavigatorProps> = ({
 
   return (
     <View style={dynamicStyles.container}>
-      {/* 侧边栏 */}
-      <View style={[dynamicStyles.sidebar, collapsed && dynamicStyles.collapsedSidebar]}>
-        {/* 侧边栏头部 */}
+      <Animated.View 
+        style={[
+          dynamicStyles.sidebar, 
+          collapsed && dynamicStyles.collapsedSidebar,
+          {
+            width: sidebarAnimation,
+          }
+        ]}
+      >
         <View style={dynamicStyles.sidebarHeader}>
           <TouchableOpacity
             onPress={handleToggleCollapse}
             style={dynamicStyles.toggleButton}
             activeOpacity={0.7}
+            accessibilityLabel={collapsed ? '展开侧边栏' : '折叠侧边栏'}
+            accessibilityRole="button"
           >
             {collapsed ? (
               <Menu size={20} color="#ccc" />
@@ -140,13 +173,15 @@ const TabletSidebarNavigator: React.FC<TabletSidebarNavigatorProps> = ({
           )}
         </View>
 
-        {/* 侧边栏内容 */}
-        <ScrollView style={dynamicStyles.sidebarContent} showsVerticalScrollIndicator={false}>
+        <ScrollView 
+          style={dynamicStyles.sidebarContent} 
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={dynamicStyles.sidebarContentContainer}
+        >
           {renderSidebarItems()}
         </ScrollView>
-      </View>
+      </Animated.View>
 
-      {/* 主内容区域 */}
       <View style={dynamicStyles.content}>
         {children}
       </View>
@@ -154,9 +189,7 @@ const TabletSidebarNavigator: React.FC<TabletSidebarNavigatorProps> = ({
   );
 };
 
-const createStyles = (spacing: number, sidebarWidth: number, isPortrait: boolean) => {
-  const minTouchTarget = DeviceUtils.getMinTouchTargetSize();
-  
+const createStyles = (spacing: number, sidebarWidth: number, isPortrait: boolean, minTouchTarget: number) => {
   return StyleSheet.create({
     container: {
       flex: 1,
@@ -167,7 +200,7 @@ const createStyles = (spacing: number, sidebarWidth: number, isPortrait: boolean
       backgroundColor: '#1c1c1e',
       borderRightWidth: 1,
       borderRightColor: '#333',
-      zIndex: isPortrait ? 1000 : 1, // 在竖屏时提高层级
+      zIndex: isPortrait ? 1000 : 1,
     },
     collapsedSidebar: {
       width: 60,
@@ -186,6 +219,7 @@ const createStyles = (spacing: number, sidebarWidth: number, isPortrait: boolean
       justifyContent: 'center',
       alignItems: 'center',
       borderRadius: 8,
+      backgroundColor: 'rgba(255, 255, 255, 0.05)',
     },
     appTitle: {
       fontSize: 18,
@@ -195,10 +229,13 @@ const createStyles = (spacing: number, sidebarWidth: number, isPortrait: boolean
     },
     sidebarContent: {
       flex: 1,
+    },
+    sidebarContentContainer: {
       paddingTop: spacing,
+      paddingBottom: spacing * 2,
     },
     section: {
-      marginBottom: spacing * 1.5,
+      marginBottom: spacing * 2,
     },
     sectionTitle: {
       fontSize: 12,
@@ -207,6 +244,7 @@ const createStyles = (spacing: number, sidebarWidth: number, isPortrait: boolean
       textTransform: 'uppercase',
       marginBottom: spacing / 2,
       marginHorizontal: spacing,
+      letterSpacing: 0.5,
     },
     sidebarItem: {
       flexDirection: 'row',
@@ -214,8 +252,9 @@ const createStyles = (spacing: number, sidebarWidth: number, isPortrait: boolean
       paddingHorizontal: spacing,
       paddingVertical: spacing * 0.75,
       marginHorizontal: spacing / 2,
-      borderRadius: 8,
+      borderRadius: 10,
       minHeight: minTouchTarget,
+      marginVertical: 2,
     },
     activeSidebarItem: {
       backgroundColor: 'rgba(64, 156, 255, 0.15)',

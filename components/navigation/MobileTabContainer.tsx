@@ -1,15 +1,15 @@
 import React, { useState } from 'react';
-import { View, StyleSheet, TouchableOpacity, Text, Platform } from 'react-native';
+import { View, StyleSheet, TouchableOpacity, Text, Platform, Animated } from 'react-native';
 import { useRouter, usePathname } from 'expo-router';
 import { Home, Search, Heart, Settings, Tv } from 'lucide-react-native';
 import { Colors } from '@/constants/Colors';
-import { useResponsiveLayout } from '@/hooks/useResponsiveLayout';
-import { DeviceUtils } from '@/utils/DeviceUtils';
+import { useResponsiveLayout, useResponsiveStyles } from '@/hooks/useResponsiveLayout';
+import type { IconComponentType } from '@/types/common';
 
 interface TabItem {
   key: string;
   label: string;
-  icon: React.ComponentType<any>;
+  icon: IconComponentType;
   route: string;
 }
 
@@ -29,18 +29,34 @@ const MobileTabContainer: React.FC<MobileTabContainerProps> = ({ children }) => 
   const router = useRouter();
   const pathname = usePathname();
   const { spacing, deviceType } = useResponsiveLayout();
+  const responsiveStyles = useResponsiveStyles();
   
-  // 在手机端过滤掉直播 tab
   const filteredTabs = tabs.filter(tab => 
     deviceType !== 'mobile' || tab.key !== 'live'
   );
   
-  const handleTabPress = (route: string) => {
-    if (route === '/') {
-      router.push('/');
-    } else {
-      router.push(route as any);
-    }
+  const [tabAnimations] = useState(() => {
+    return filteredTabs.reduce((acc, tab) => {
+      acc[tab.key] = new Animated.Value(1);
+      return acc;
+    }, {} as Record<string, Animated.Value>);
+  });
+  
+  const handleTabPress = (route: string, tabKey: string) => {
+    Animated.sequence([
+      Animated.timing(tabAnimations[tabKey], {
+        toValue: 0.8,
+        duration: 100,
+        useNativeDriver: true,
+      }),
+      Animated.timing(tabAnimations[tabKey], {
+        toValue: 1,
+        duration: 100,
+        useNativeDriver: true,
+      }),
+    ]).start();
+    
+    router.push(route as never);
   };
 
   const isTabActive = (route: string) => {
@@ -49,40 +65,54 @@ const MobileTabContainer: React.FC<MobileTabContainerProps> = ({ children }) => 
     return false;
   };
 
-  const dynamicStyles = createStyles(spacing);
+  const dynamicStyles = createStyles(spacing, responsiveStyles.minTouchTarget);
 
   return (
     <View style={dynamicStyles.container}>
-      {/* 内容区域 */}
       <View style={dynamicStyles.content}>
         {children}
       </View>
       
-      {/* 底部导航栏 */}
       <View style={dynamicStyles.tabBar}>
         {filteredTabs.map((tab) => {
           const isActive = isTabActive(tab.route);
           const IconComponent = tab.icon;
           
           return (
-            <TouchableOpacity
+            <Animated.View
               key={tab.key}
-              style={[dynamicStyles.tab, isActive && dynamicStyles.activeTab]}
-              onPress={() => handleTabPress(tab.route)}
-              activeOpacity={0.7}
+              style={[
+                dynamicStyles.tabWrapper,
+                {
+                  transform: [
+                    {
+                      scale: tabAnimations[tab.key],
+                    },
+                  ],
+                },
+              ]}
             >
-              <IconComponent
-                size={20}
-                color={isActive ? Colors.dark.primary : '#888'}
-                strokeWidth={isActive ? 2.5 : 2}
-              />
-              <Text style={[
-                dynamicStyles.tabLabel,
-                isActive && dynamicStyles.activeTabLabel
-              ]}>
-                {tab.label}
-              </Text>
-            </TouchableOpacity>
+              <TouchableOpacity
+                style={[dynamicStyles.tab, isActive && dynamicStyles.activeTab]}
+                onPress={() => handleTabPress(tab.route, tab.key)}
+                activeOpacity={0.7}
+                accessibilityLabel={tab.label}
+                accessibilityRole="button"
+                accessibilityState={{ selected: isActive }}
+              >
+                <IconComponent
+                  size={isActive ? 22 : 20}
+                  color={isActive ? Colors.dark.primary : '#888'}
+                  strokeWidth={isActive ? 2.5 : 2}
+                />
+                <Text style={[
+                  dynamicStyles.tabLabel,
+                  isActive && dynamicStyles.activeTabLabel
+                ]}>
+                  {tab.label}
+                </Text>
+              </TouchableOpacity>
+            </Animated.View>
           );
         })}
       </View>
@@ -90,9 +120,7 @@ const MobileTabContainer: React.FC<MobileTabContainerProps> = ({ children }) => 
   );
 };
 
-const createStyles = (spacing: number) => {
-  const minTouchTarget = DeviceUtils.getMinTouchTargetSize();
-  
+const createStyles = (spacing: number, minTouchTarget: number) => {
   return StyleSheet.create({
     container: {
       flex: 1,
@@ -117,13 +145,20 @@ const createStyles = (spacing: number) => {
       shadowRadius: 4,
       elevation: 10,
     },
+    tabWrapper: {
+      flex: 1,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
     tab: {
       flex: 1,
       alignItems: 'center',
       justifyContent: 'center',
       minHeight: minTouchTarget,
       paddingVertical: spacing / 2,
-      borderRadius: 8,
+      paddingHorizontal: spacing / 2,
+      borderRadius: 12,
+      width: '100%',
     },
     activeTab: {
       backgroundColor: 'rgba(64, 156, 255, 0.1)',
@@ -131,7 +166,7 @@ const createStyles = (spacing: number) => {
     tabLabel: {
       fontSize: 11,
       color: '#888',
-      marginTop: 2,
+      marginTop: 4,
       fontWeight: '500',
     },
     activeTabLabel: {

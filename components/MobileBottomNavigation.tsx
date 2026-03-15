@@ -5,11 +5,12 @@ import { Home, Heart, Search, Settings, Tv } from 'lucide-react-native';
 import { ThemedText } from '@/components/ThemedText';
 import { useResponsiveLayout } from '@/hooks/useResponsiveLayout';
 import { DeviceUtils } from '@/utils/DeviceUtils';
+import type { IconComponentType } from '@/types/common';
 
 interface NavigationItem {
   name: string;
   label: string;
-  icon: any;
+  icon: IconComponentType;
   route: string;
 }
 
@@ -57,22 +58,16 @@ export const MobileBottomNavigation: React.FC<MobileBottomNavigationProps> = ({
   const pathname = usePathname();
   const responsiveConfig = useResponsiveLayout();
 
-  // Only show on mobile devices
   if (responsiveConfig.deviceType !== 'mobile') {
     return null;
   }
 
-  // 在手机端过滤掉直播 tab
   const filteredNavigationItems = navigationItems.filter(item => 
     responsiveConfig.deviceType !== 'mobile' || item.name !== 'live'
   );
 
   const handleNavigation = (route: string) => {
-    if (route === '/') {
-      router.push('/');
-    } else {
-      router.push(route as any);
-    }
+    router.push(route as never);
   };
 
   const isActiveRoute = (route: string) => {
@@ -128,8 +123,8 @@ export const MobileBottomNavigation: React.FC<MobileBottomNavigationProps> = ({
 const styles = StyleSheet.create({
   container: {
     flexDirection: 'row',
-    height: 84, // 49 + 35 for safe area
-    paddingBottom: 35, // Safe area padding
+    height: 84,
+    paddingBottom: 35,
     paddingTop: 8,
     paddingHorizontal: 8,
     borderTopWidth: 0.5,

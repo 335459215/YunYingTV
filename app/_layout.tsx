@@ -1,6 +1,6 @@
 import { DarkTheme, DefaultTheme, ThemeProvider } from "@react-navigation/native";
 import { useFonts } from "expo-font";
-import { Stack } from "expo-router";
+import { Stack, router } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import { useEffect } from "react";
 import { Platform, View, StyleSheet } from "react-native";
@@ -15,6 +15,7 @@ import { useUpdateStore, initUpdateStore } from "@/stores/updateStore";
 import { UpdateModal } from "@/components/UpdateModal";
 import { UPDATE_CONFIG } from "@/constants/UpdateConfig";
 import { useResponsiveLayout } from "@/hooks/useResponsiveLayout";
+import historyManager from "@/services/historyManager";
 import Logger from '@/utils/Logger';
 
 const logger = Logger.withTag('RootLayout');
@@ -36,6 +37,35 @@ export default function RootLayout() {
   useEffect(() => {
     const initializeApp = async () => {
       await loadSettings();
+      
+      // 检查是否开启了自动续播
+      const { autoContinuePlayback } = useSettingsStore.getState();
+      if (autoContinuePlayback) {
+        logger.info('Auto continue playback is enabled, checking for unfinished records');
+        try {
+          const continuationItem = await historyManager.getContinuationItem();
+          if (continuationItem) {
+            logger.info(`Found continuation item: ${continuationItem.title}`);
+            // 导航到播放页面
+            router.replace({
+              pathname: '/play',
+              params: {
+                episodeIndex: continuationItem.index.toString(),
+                position: (continuationItem.play_time * 1000).toString(), // 转换为毫秒
+                source: continuationItem.source,
+                id: continuationItem.id,
+                title: continuationItem.title,
+              },
+            });
+          } else {
+            logger.info('No unfinished play records found');
+          }
+        } catch (error) {
+          logger.error('Failed to check for continuation items:', error);
+        }
+      } else {
+        logger.info('Auto continue playback is disabled');
+      }
     };
     initializeApp();
     initUpdateStore(); // 初始化更新存储

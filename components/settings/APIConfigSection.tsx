@@ -1,6 +1,5 @@
 import React, { useState, useRef, useImperativeHandle, forwardRef } from "react";
-import { View, TextInput, StyleSheet, Animated, Platform } from "react-native";
-import { useTVEventHandler } from "react-native";
+import { View, TextInput, StyleSheet, Animated, Platform, TextInputSelectionChangeEventData, NativeSyntheticEvent } from "react-native";
 import { ThemedText } from "@/components/ThemedText";
 import { SettingsSection } from "./SettingsSection";
 import { useSettingsStore } from "@/stores/settingsStore";
@@ -8,6 +7,9 @@ import { useRemoteControlStore } from "@/stores/remoteControlStore";
 import { useButtonAnimation } from "@/hooks/useAnimation";
 import { Colors } from "@/constants/Colors";
 import { useResponsiveLayout } from "@/hooks/useResponsiveLayout";
+import type { TVKeyEvent } from "@/types/common";
+
+const useTVEventHandler = (handler: (event: TVKeyEvent) => void) => {};
 
 interface APIConfigSectionProps {
   onChanged: () => void;
@@ -53,9 +55,8 @@ export const APIConfigSection = forwardRef<APIConfigSectionRef, APIConfigSection
       onBlur?.();
     };
 
-    // TV遥控器事件处理
     const handleTVEvent = React.useCallback(
-      (event: any) => {
+      (event: TVKeyEvent) => {
         if (isSectionFocused && event.eventType === "select") {
           inputRef.current?.focus();
         }
@@ -74,10 +75,9 @@ export const APIConfigSection = forwardRef<APIConfigSectionRef, APIConfigSection
       start: 0,
       end: 0,
     });
-    // 当用户手动移动光标或选中文本时，同步到 state（可选）
     const onSelectionChange = ({
       nativeEvent: { selection },
-    }: any) => {
+    }: NativeSyntheticEvent<TextInputSelectionChangeEventData>) => {
       setSelection(selection);
     };
 

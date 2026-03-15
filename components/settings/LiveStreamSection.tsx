@@ -1,6 +1,5 @@
 import React, { useState, useRef, useImperativeHandle, forwardRef } from "react";
-import { View, TextInput, StyleSheet, Animated, Platform } from "react-native";
-import { useTVEventHandler } from "react-native";
+import { View, TextInput, StyleSheet, Animated, Platform, TextInputSelectionChangeEventData, NativeSyntheticEvent } from "react-native";
 import { ThemedText } from "@/components/ThemedText";
 import { SettingsSection } from "./SettingsSection";
 import { useSettingsStore } from "@/stores/settingsStore";
@@ -8,6 +7,9 @@ import { useRemoteControlStore } from "@/stores/remoteControlStore";
 import { useButtonAnimation } from "@/hooks/useAnimation";
 import { Colors } from "@/constants/Colors";
 import { useResponsiveLayout } from "@/hooks/useResponsiveLayout";
+import type { TVKeyEvent } from "@/types/common";
+
+const useTVEventHandler = (handler: (event: TVKeyEvent) => void) => {};
 
 interface LiveStreamSectionProps {
   onChanged: () => void;
@@ -18,6 +20,7 @@ interface LiveStreamSectionProps {
 
 export interface LiveStreamSectionRef {
   setInputValue: (value: string) => void;
+  focus: () => void;
 }
 
 export const LiveStreamSection = forwardRef<LiveStreamSectionRef, LiveStreamSectionProps>(
@@ -40,6 +43,9 @@ export const LiveStreamSection = forwardRef<LiveStreamSectionRef, LiveStreamSect
         setM3uUrl(value);
         onChanged();
       },
+      focus: () => {
+        inputRef.current?.focus();
+      }
     }));
 
     const handleSectionFocus = () => {
@@ -58,7 +64,7 @@ export const LiveStreamSection = forwardRef<LiveStreamSectionRef, LiveStreamSect
     }
 
     const handleTVEvent = React.useCallback(
-      (event: any) => {
+      (event: TVKeyEvent) => {
         if (isSectionFocused && event.eventType === "select") {
           inputRef.current?.focus();
         }
@@ -73,10 +79,9 @@ export const LiveStreamSection = forwardRef<LiveStreamSectionRef, LiveStreamSect
           start: 0,
           end: 0,
         });
-        // 当用户手动移动光标或选中文本时，同步到 state（可选）
         const onSelectionChange = ({
           nativeEvent: { selection },
-        }: any) => {
+        }: NativeSyntheticEvent<TextInputSelectionChangeEventData>) => {
           setSelection(selection);
         };
 

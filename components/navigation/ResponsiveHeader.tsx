@@ -6,6 +6,7 @@ import { ThemedText } from '@/components/ThemedText';
 import { useResponsiveLayout } from '@/hooks/useResponsiveLayout';
 import { DeviceUtils } from '@/utils/DeviceUtils';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import type { InsetsLike } from '@/types/common';
 
 interface ResponsiveHeaderProps {
   title?: string;
@@ -76,7 +77,7 @@ const ResponsiveHeader: React.FC<ResponsiveHeaderProps> = ({
   );
 };
 
-const createStyles = (spacing: number, deviceType: string, insets: any) => {
+const createStyles = (spacing: number, deviceType: string, insets: InsetsLike) => {
   const minTouchTarget = DeviceUtils.getMinTouchTargetSize();
   
   return StyleSheet.create({

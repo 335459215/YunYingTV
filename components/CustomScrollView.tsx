@@ -1,23 +1,23 @@
 import React, { useCallback, useRef, useState, useEffect } from "react";
-import { View, StyleSheet, ScrollView, ActivityIndicator, TouchableOpacity, BackHandler } from "react-native";
+import { View, StyleSheet, ScrollView, ActivityIndicator, TouchableOpacity, BackHandler, NativeSyntheticEvent, NativeScrollEvent } from "react-native";
 import { ThemedText } from "@/components/ThemedText";
 import { useResponsiveLayout } from "@/hooks/useResponsiveLayout";
 import { getCommonResponsiveStyles } from "@/utils/ResponsiveStyles";
 
-interface CustomScrollViewProps {
-  data: any[];
-  renderItem: ({ item, index }: { item: any; index: number }) => React.ReactNode;
-  numColumns?: number; // 如果不提供，将使用响应式默认值
+interface CustomScrollViewProps<T> {
+  data: T[];
+  renderItem: ({ item, index }: { item: T; index: number }) => React.ReactNode;
+  numColumns?: number;
   loading?: boolean;
   loadingMore?: boolean;
   error?: string | null;
   onEndReached?: () => void;
   loadMoreThreshold?: number;
   emptyMessage?: string;
-  ListFooterComponent?: React.ComponentType<any> | React.ReactElement | null;
+  ListFooterComponent?: React.ComponentType<Record<string, never>> | React.ReactElement | null;
 }
 
-const CustomScrollView: React.FC<CustomScrollViewProps> = ({
+const CustomScrollView = <T,>({
   data,
   renderItem,
   numColumns,
@@ -28,9 +28,9 @@ const CustomScrollView: React.FC<CustomScrollViewProps> = ({
   loadMoreThreshold = 200,
   emptyMessage = "暂无内容",
   ListFooterComponent,
-}) => {
+}: CustomScrollViewProps<T>) => {
   const scrollViewRef = useRef<ScrollView>(null);
-  const firstCardRef = useRef<any>(null); // <--- 新增
+  const firstCardRef = useRef<TouchableOpacity>(null);
   const [showScrollToTop, setShowScrollToTop] = useState(false);
   const responsiveConfig = useResponsiveLayout();
   const commonStyles = getCommonResponsiveStyles(responsiveConfig);
@@ -55,11 +55,10 @@ const CustomScrollView: React.FC<CustomScrollViewProps> = ({
   const effectiveColumns = numColumns || responsiveConfig.columns;
 
   const handleScroll = useCallback(
-    ({ nativeEvent }: { nativeEvent: any }) => {
+    ({ nativeEvent }: NativeSyntheticEvent<NativeScrollEvent>) => {
       const { layoutMeasurement, contentOffset, contentSize } = nativeEvent;
       const isCloseToBottom = layoutMeasurement.height + contentOffset.y >= contentSize.height - loadMoreThreshold;
 
-      // 显示/隐藏返回顶部按钮
       setShowScrollToTop(contentOffset.y > 200);
 
       if (isCloseToBottom && !loadingMore && onEndReached) {
@@ -82,7 +81,7 @@ const CustomScrollView: React.FC<CustomScrollViewProps> = ({
       if (React.isValidElement(ListFooterComponent)) {
         return ListFooterComponent;
       } else if (typeof ListFooterComponent === "function") {
-        const Component = ListFooterComponent as React.ComponentType<any>;
+        const Component = ListFooterComponent;
         return <Component />;
       }
       return null;
@@ -119,9 +118,8 @@ const CustomScrollView: React.FC<CustomScrollViewProps> = ({
     );
   }
 
-  // 将数据按行分组
-  const groupItemsByRow = (items: any[], columns: number) => {
-    const rows = [];
+  const groupItemsByRow = (items: T[], columns: number): T[][] => {
+    const rows: T[][] = [];
     for (let i = 0; i < items.length; i += columns) {
       rows.push(items.slice(i, i + columns));
     }
@@ -130,29 +128,29 @@ const CustomScrollView: React.FC<CustomScrollViewProps> = ({
 
   const rows = groupItemsByRow(data, effectiveColumns);
 
-  // 动态样式
   const dynamicStyles = StyleSheet.create({
     listContent: {
       paddingBottom: responsiveConfig.spacing * 2,
-      paddingHorizontal: responsiveConfig.spacing / 2,
+      paddingHorizontal: responsiveConfig.spacing,
     },
     rowContainer: {
       flexDirection: "row",
       marginBottom: responsiveConfig.spacing,
+      justifyContent: "flex-start",
     },
     fullRowContainer: {
-      justifyContent: "space-around",
-      marginRight: responsiveConfig.spacing / 2,
+      justifyContent: "space-between",
     },
     partialRowContainer: {
       justifyContent: "flex-start",
     },
     itemContainer: {
       width: responsiveConfig.cardWidth,
-    },
-    itemWithMargin: {
-      width: responsiveConfig.cardWidth,
       marginRight: responsiveConfig.spacing,
+    },
+    lastItemContainer: {
+      width: responsiveConfig.cardWidth,
+      marginRight: 0,
     },
     scrollToTopButton: {
       position: 'absolute',
@@ -184,16 +182,13 @@ const CustomScrollView: React.FC<CustomScrollViewProps> = ({
                 <View key={rowIndex} style={[dynamicStyles.rowContainer, rowStyle]}>
                   {row.map((item, itemIndex) => {
                     const actualIndex = rowIndex * effectiveColumns + itemIndex;
-                    const isLastItemInPartialRow = !isFullRow && itemIndex === row.length - 1;
-                    const itemStyle = isLastItemInPartialRow ? dynamicStyles.itemContainer : dynamicStyles.itemWithMargin;
-
-                    const cardProps = {
-                      key: actualIndex,
-                      style: isFullRow ? dynamicStyles.itemContainer : itemStyle,
-                    };
+                    const isLastItem = itemIndex === row.length - 1;
 
                     return (
-                      <View {...cardProps}>
+                      <View 
+                        key={actualIndex} 
+                        style={isLastItem ? dynamicStyles.lastItemContainer : dynamicStyles.itemContainer}
+                      >
                         {renderItem({ item, index: actualIndex })}
                       </View>
                     );

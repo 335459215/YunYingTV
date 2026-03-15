@@ -65,7 +65,7 @@ export default function DetailScreen() {
   if (error) {
     const content = (
       <ThemedView style={[commonStyles.safeContainer, commonStyles.center]}>
-        <ThemedText type="subtitle" style={commonStyles.textMedium}>
+        <ThemedText type="h3" style={commonStyles.textMedium}>
           {error}
         </ThemedText>
       </ThemedView>
@@ -86,7 +86,7 @@ export default function DetailScreen() {
   if (!detail) {
     const content = (
       <ThemedView style={[commonStyles.safeContainer, commonStyles.center]}>
-        <ThemedText type="subtitle">未找到详情信息</ThemedText>
+        <ThemedText type="h3">未找到详情信息</ThemedText>
       </ThemedView>
     );
 

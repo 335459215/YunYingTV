@@ -137,6 +137,7 @@ const VideoLoadingAnimation: React.FC<VideoLoadingAnimationProps> = ({ showProgr
       textFadeAnimation,
       ...shapeAnimations,
     ]).start();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const animatedStyles = {

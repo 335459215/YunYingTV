@@ -3,6 +3,7 @@ import { SearchResult, api } from "@/services/api";
 import { getResolutionFromM3U8 } from "@/services/m3u8";
 import { useSettingsStore } from "@/stores/settingsStore";
 import { FavoriteManager } from "@/services/storage";
+import sourceSpeedTester, { SourceSpeedTestResult } from "@/services/sourceSpeedTester";
 import Logger from "@/utils/Logger";
 
 const logger = Logger.withTag('DetailStore');
@@ -20,6 +21,7 @@ interface DetailState {
   controller: AbortController | null;
   isFavorited: boolean;
   failedSources: Set<string>; // 记录失败的source列表
+  speedTestResults: SourceSpeedTestResult[]; // 存储测速结果
 
   init: (q: string, preferredSource?: string, id?: string) => Promise<void>;
   setDetail: (detail: SearchResultWithResolution) => Promise<void>;
@@ -27,6 +29,8 @@ interface DetailState {
   toggleFavorite: () => Promise<void>;
   markSourceAsFailed: (source: string, reason: string) => void;
   getNextAvailableSource: (currentSource: string, episodeIndex: number) => SearchResultWithResolution | null;
+  testSourcesSpeed: () => Promise<SourceSpeedTestResult[]>;
+  getBestSource: (episodeIndex: number) => SearchResultWithResolution | null;
 }
 
 const useDetailStore = create<DetailState>((set, get) => ({
@@ -40,6 +44,95 @@ const useDetailStore = create<DetailState>((set, get) => ({
   controller: null,
   isFavorited: false,
   failedSources: new Set(),
+  speedTestResults: [],
+
+  testSourcesSpeed: async () => {
+    const { searchResults, failedSources } = get();
+    
+    // 筛选出有episodes且未失败的源
+    const validSources = searchResults.filter(result => 
+      !failedSources.has(result.source) &&
+      result.episodes && 
+      result.episodes.length > 0
+    );
+    
+    if (validSources.length === 0) {
+      logger.info('No valid sources to test');
+      return [];
+    }
+    
+    // 准备测试数据
+    const sourcesToTest = validSources.map(source => ({
+      source: source.source,
+      source_name: source.source_name,
+      testUrl: source.episodes![0], // 使用第一集作为测试URL
+    }));
+    
+    // 执行测速
+    const results = await sourceSpeedTester.testSources(sourcesToTest);
+    
+    // 更新状态
+    set({ speedTestResults: results });
+    
+    return results;
+  },
+
+  getBestSource: (episodeIndex: number) => {
+    const { searchResults, speedTestResults, failedSources } = get();
+    
+    // 筛选出有episodes且未失败的源
+    const validSources = searchResults.filter(result => 
+      !failedSources.has(result.source) &&
+      result.episodes && 
+      result.episodes.length > episodeIndex
+    );
+    
+    if (validSources.length === 0) {
+      return null;
+    }
+    
+    // 计算所有源的最大集数
+    const maxEpisodeCount = Math.max(...validSources.map(source => source.episodes?.length || 0));
+    
+    // 优先选择集数完整的源（集数等于最大集数的源）
+    const completeSources = validSources.filter(source => source.episodes?.length === maxEpisodeCount);
+    const sourcesToSort = completeSources.length > 0 ? completeSources : validSources;
+    
+    // 如果有测速结果，按评分排序
+    if (speedTestResults.length > 0) {
+      // 创建source到评分的映射
+      const sourceScoreMap = new Map<string, number>();
+      speedTestResults.forEach(result => {
+        sourceScoreMap.set(result.source, result.score);
+      });
+      
+      // 按评分排序，评分高的在前
+      sourcesToSort.sort((a, b) => {
+        const scoreA = sourceScoreMap.get(a.source) || 0;
+        const scoreB = sourceScoreMap.get(b.source) || 0;
+        return scoreB - scoreA;
+      });
+    } else {
+      // 如果没有测速结果，按分辨率排序
+      sourcesToSort.sort((a, b) => {
+        const aResolution = a.resolution || '';
+        const bResolution = b.resolution || '';
+        
+        // 优先级: 1080p > 720p > 其他 > 无分辨率
+        const resolutionPriority = (res: string) => {
+          if (res.includes('1080')) return 4;
+          if (res.includes('720')) return 3;
+          if (res.includes('480')) return 2;
+          if (res.includes('360')) return 1;
+          return 0;
+        };
+        
+        return resolutionPriority(bResolution) - resolutionPriority(aResolution);
+      });
+    }
+    
+    return sourcesToSort[0];
+  },
 
   init: async (q, preferredSource, id) => {
     const perfStart = performance.now();
@@ -276,6 +369,19 @@ const useDetailStore = create<DetailState>((set, get) => ({
         set({ error: `未找到 "${q}" 的播放源，请检查标题拼写或稍后重试` });
       } else if (finalState.searchResults.length > 0) {
         logger.info(`[SUCCESS] DetailStore.init completed successfully with ${finalState.searchResults.length} sources`);
+        
+        // 检查是否启用自动测速
+        const { autoSpeedTest } = useSettingsStore.getState();
+        if (autoSpeedTest) {
+          // 触发影视源测速
+          logger.info(`[PERF] Starting background speed test for ${finalState.searchResults.length} sources`);
+          // 异步执行测速，不阻塞主线程
+          get().testSourcesSpeed().catch(error => {
+            logger.error(`[ERROR] Background speed test failed:`, error);
+          });
+        } else {
+          logger.info(`[PERF] Auto speed test is disabled, skipping`);
+        }
       }
 
       if (finalState.detail) {

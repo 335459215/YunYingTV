@@ -1,5 +1,5 @@
 import { useCallback, RefObject, useMemo } from 'react';
-import { Video, ResizeMode } from 'expo-av';
+import { Video, ResizeMode, AVPlaybackStatus } from 'expo-av';
 import Toast from 'react-native-toast-message';
 import usePlayerStore from '@/stores/playerStore';
 
@@ -9,7 +9,7 @@ interface UseVideoHandlersProps {
   initialPosition: number;
   introEndTime?: number;
   playbackRate: number;
-  handlePlaybackStatusUpdate: (status: any) => void;
+  handlePlaybackStatusUpdate: (status: AVPlaybackStatus) => void;
   deviceType: string;
   detail?: { poster?: string };
 }
@@ -58,13 +58,12 @@ export const useVideoHandlers = ({
     usePlayerStore.setState({ isLoading: true });
   }, [currentEpisode?.url]);
 
-  const onError = useCallback((error: any) => {
+  const onError = useCallback((error: string) => {
     if (!currentEpisode?.url) return;
     
     console.error(`[ERROR] Video playback error:`, error);
     
-    // 检测SSL证书错误和其他网络错误
-    const errorString = (error as any)?.error?.toString() || error?.toString() || '';
+    const errorString = error?.toString() || '';
     const isSSLError = errorString.includes('SSLHandshakeException') || 
                       errorString.includes('CertPathValidatorException') ||
                       errorString.includes('Trust anchor for certification path not found');
