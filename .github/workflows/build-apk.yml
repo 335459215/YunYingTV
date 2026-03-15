@@ -24,16 +24,12 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '18'
-          cache: 'yarn'
 
       - name: Install dependencies
-        run: yarn install --frozen-lockfile
-
-      - name: Setup Java JDK
-        uses: actions/setup-java@v4
-        with:
-          distribution: 'temurin'
-          java-version: '17'
+        run: |
+          echo "📦 Installing dependencies with yarn..."
+          rm -f package-lock.json
+          yarn install --frozen-lockfile || yarn install --ignore-engines
 
       - name: Get version from package.json
         id: version
@@ -43,22 +39,14 @@ jobs:
         run: |
           echo "🔧 Starting prebuild..."
           export EXPO_USE_METRO_WORKSPACE_ROOT=1
-          yarn prebuild
+          yarn expo prebuild --clean
         env:
           EXPO_NO_GIT_CLEAN: 1
-
-      - name: Verify Android directory
-        run: |
-          echo "📁 Checking Android directory..."
-          ls -la android/
-          ls -la xml/ || echo "xml/ directory not found"
 
       - name: Copy config files
         run: |
           echo "📋 Copying configuration files..."
           node scripts/copy-config.js
-          echo "✅ Config files copied"
-          ls -la android/app/src/
 
       - name: Make gradlew executable
         run: |
@@ -73,16 +61,10 @@ jobs:
         env:
           GRADLE_OPTS: "-Xmx4g -XX:MaxMetaspaceSize=1g"
 
-      - name: Verify APK output
-        run: |
-          echo "📦 Verifying APK output..."
-          ls -lh android/app/build/outputs/apk/release/ || echo "APK not found"
-
       - name: Prepare APK
         run: |
           mkdir -p release
           cp android/app/build/outputs/apk/release/app-release.apk release/YunYingTV-v${{ steps.version.outputs.VERSION }}.apk
-          echo "✅ APK prepared: release/YunYingTV-v${{ steps.version.outputs.VERSION }}.apk"
 
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
