@@ -40,6 +40,19 @@ node_modules/
 npm-debug.log
 yarn-error.log
 
+# Build outputs
+#
+dist/
+build/
+
+# Screenshots (keep only essential ones)
+#
+screenshot/
+
+# Android SDK tools (should not be in repo)
+#
+cmdline-tools/
+
 # fastlane
 #
 # It is recommended to not store the screenshots in the git repo. Instead, use fastlane to re-generate the
