@@ -3,10 +3,20 @@ name: Build Android APK
 on:
   workflow_dispatch:
     inputs:
+      version_increment:
+        description: 'Version increment type (auto increments patch version by default)'
+        required: false
+        default: 'patch'
+        type: choice
+        options:
+          - 'patch'
+          - 'minor'
+          - 'major'
+          - 'none'
       create_release:
         description: 'Create GitHub Release'
         required: true
-        default: 'false'
+        default: 'true'
         type: choice
         options:
           - 'true'
@@ -24,21 +34,80 @@ jobs:
     
     steps:
       - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          fetch-depth: 0
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '18'
 
+      - name: Configure Git
+        run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+
+      - name: Get current version
+        id: current_version
+        run: |
+          CURRENT_VERSION=$(node -p "require('./package.json').version")
+          echo "CURRENT_VERSION=$CURRENT_VERSION" >> $GITHUB_OUTPUT
+          echo "📦 Current version: $CURRENT_VERSION"
+
+      - name: Increment version
+        id: new_version
+        run: |
+          CURRENT="${{ steps.current_version.outputs.CURRENT_VERSION }}"
+          INCREMENT="${{ github.event.inputs.version_increment || 'patch' }}"
+          
+          # Parse version parts
+          IFS='.' read -r -a VERSION_PARTS <<< "$CURRENT"
+          MAJOR=${VERSION_PARTS[0]}
+          MINOR=${VERSION_PARTS[1]}
+          PATCH=${VERSION_PARTS[2]}
+          
+          # Increment based on type
+          case "$INCREMENT" in
+            "major")
+              MAJOR=$((MAJOR + 1))
+              MINOR=0
+              PATCH=0
+              ;;
+            "minor")
+              MINOR=$((MINOR + 1))
+              PATCH=0
+              ;;
+            "patch")
+              PATCH=$((PATCH + 1))
+              ;;
+            "none")
+              # Keep current version
+              ;;
+          esac
+          
+          NEW_VERSION="$MAJOR.$MINOR.$PATCH"
+          echo "NEW_VERSION=$NEW_VERSION" >> $GITHUB_OUTPUT
+          echo "⬆️ New version: $NEW_VERSION (incremented $INCREMENT)"
+
+      - name: Update package.json version
+        if: github.event.inputs.version_increment != 'none'
+        run: |
+          NEW_VERSION="${{ steps.new_version.outputs.NEW_VERSION }}"
+          echo "📝 Updating package.json to version $NEW_VERSION"
+          node -p "JSON.stringify({...require('./package.json'), version: '$NEW_VERSION'}, null, 2)" > package.json
+          
+          # Commit and push version change
+          git add package.json
+          git commit -m "chore: bump version to $NEW_VERSION [skip ci]" || echo "No changes to commit"
+          git push
+          echo "✅ Version updated and pushed"
+
       - name: Install dependencies
         run: |
           echo "📦 Installing dependencies..."
           rm -f package-lock.json
           yarn install --ignore-engines
-
-      - name: Get version from package.json
-        id: version
-        run: echo "VERSION=$(node -p "require('./package.json').version")" >> $GITHUB_OUTPUT
 
       - name: Prebuild (Expo)
         run: |
@@ -74,13 +143,13 @@ jobs:
       - name: Prepare APK
         run: |
           mkdir -p release
-          cp android/app/build/outputs/apk/release/app-release.apk release/YunYingTV-v${{ steps.version.outputs.VERSION }}.apk
-          echo "✅ APK ready: release/YunYingTV-v${{ steps.version.outputs.VERSION }}.apk"
+          cp android/app/build/outputs/apk/release/app-release.apk release/YunYingTV-v${{ steps.new_version.outputs.NEW_VERSION }}.apk
+          echo "✅ APK ready: release/YunYingTV-v${{ steps.new_version.outputs.NEW_VERSION }}.apk"
 
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: YunYingTV-v${{ steps.version.outputs.VERSION }}
+          name: YunYingTV-v${{ steps.new_version.outputs.NEW_VERSION }}
           path: release/*.apk
           retention-days: 30
 
@@ -89,10 +158,10 @@ jobs:
         timeout-minutes: 10
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v${{ steps.version.outputs.VERSION }}
-          name: Release v${{ steps.version.outputs.VERSION }}
+          tag_name: v${{ steps.new_version.outputs.NEW_VERSION }}
+          name: Release v${{ steps.new_version.outputs.NEW_VERSION }}
           body: |
-            ## YunYingTV v${{ steps.version.outputs.VERSION }}
+            ## YunYingTV v${{ steps.new_version.outputs.NEW_VERSION }}
             
             Automated build from GitHub Actions
             
@@ -104,7 +173,7 @@ jobs:
           prerelease: false
           files: release/*.apk
           fail_on_unmatched_files: false
-          generate_release_notes: false
+          generate_release_notes: true
           make_latest: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
