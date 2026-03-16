@@ -63,7 +63,7 @@ yunyingtv/
 ### 环境准备
 
 #### 必需软件
-- [Node.js](https://nodejs.org/) (LTS 版本，推荐 18+)
+- [Node.js](https://nodejs.org/) (LTS 版本，推荐 20+)
 - [Yarn](https://yarnpkg.com/) (推荐 1.22+)
 - [Expo CLI](https://docs.expo.dev/get-started/installation/)
 - [Java 17](https://adoptium.net/) (Amazon Corretto 17)
