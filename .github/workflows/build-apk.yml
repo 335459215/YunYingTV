@@ -139,9 +139,16 @@ jobs:
         run: |
           echo "🏗️  Building APK..."
           cd android
-          ./gradlew assembleRelease --stacktrace --no-daemon
+          ./gradlew assembleRelease \
+            --stacktrace \
+            --no-daemon \
+            --no-configuration-cache \
+            --warning-mode none \
+            -PreactNativeArchitectures=arm64-v8a,armeabi-v7a \
+            -Pandroid.enableDexingArtifactTransform.desugaring=false
         env:
-          GRADLE_OPTS: "-Xmx4g -XX:MaxMetaspaceSize=1g"
+          GRADLE_OPTS: "-Xmx6g -XX:MaxMetaspaceSize=2g -XX:+HeapDumpOnOutOfMemoryError -Dfile.encoding=UTF-8"
+          ORG_GRADLE_PROJECT_reactNativeArchitectures: "arm64-v8a,armeabi-v7a"
 
       - name: Verify APK
         run: |
