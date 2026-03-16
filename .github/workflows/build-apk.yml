@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       version_increment:
-        description: 'Version increment type (auto increments patch version by default)'
+        description: 'Version increment type (default: patch - auto increment 0.0.1)'
         required: false
         default: 'patch'
         type: choice
@@ -31,7 +31,7 @@ jobs:
   build:
     name: Build APK
     runs-on: ubuntu-latest
-    
+
     steps:
       - uses: actions/checkout@v4
         with:
@@ -95,9 +95,8 @@ jobs:
         run: |
           NEW_VERSION="${{ steps.new_version.outputs.NEW_VERSION }}"
           echo "📝 Updating package.json to version $NEW_VERSION"
-          export NEW_VERSION
           
-          # 使用 node 更新 package.json
+          # Update package.json using node
           node << 'EOF'
           const fs = require('fs');
           const pkg = JSON.parse(fs.readFileSync('./package.json', 'utf8'));
@@ -116,6 +115,10 @@ jobs:
           echo "📦 Installing dependencies..."
           rm -f package-lock.json
           yarn install --ignore-engines
+
+      - name: Get version for build
+        id: build_version
+        run: echo "VERSION=${{ steps.new_version.outputs.NEW_VERSION }}" >> $GITHUB_OUTPUT
 
       - name: Prebuild (Expo)
         run: |
@@ -136,43 +139,28 @@ jobs:
           chmod +x android/gradlew
 
       - name: Build APK
-        timeout-minutes: 45
         run: |
           echo "🏗️  Building APK..."
           cd android
-          
-          # 显示 Java 版本和内存信息
-          java -version
-          echo "GRADLE_OPTS: $GRADLE_OPTS"
-          
-          # 清理之前的构建
-          ./gradlew clean || true
-          
-          # 构建 Release APK
-          ./gradlew assembleRelease \
-            --stacktrace \
-            --info \
-            --no-daemon
+          ./gradlew assembleRelease --stacktrace --no-daemon
         env:
-          GRADLE_OPTS: "-Xmx6g -XX:MaxMetaspaceSize=2g -XX:+HeapDumpOnOutOfMemoryError -Dfile.encoding=UTF-8"
-          ORG_GRADLE_PROJECT_reactNativeArchitectures: "arm64-v8a,armeabi-v7a"
+          GRADLE_OPTS: "-Xmx4g -XX:MaxMetaspaceSize=1g"
 
       - name: Verify APK
         run: |
           echo "📦 Verifying APK..."
           ls -lh android/app/build/outputs/apk/release/ || echo "No APK found"
-          test -f android/app/build/outputs/apk/release/app-release.apk || (echo "❌ APK not found!" && exit 1)
 
       - name: Prepare APK
         run: |
           mkdir -p release
-          cp android/app/build/outputs/apk/release/app-release.apk release/YunYingTV-v${{ steps.new_version.outputs.NEW_VERSION }}.apk
-          echo "✅ APK ready: release/YunYingTV-v${{ steps.new_version.outputs.NEW_VERSION }}.apk"
+          cp android/app/build/outputs/apk/release/app-release.apk release/YunYingTV-v${{ steps.build_version.outputs.VERSION }}.apk
+          echo "✅ APK ready: release/YunYingTV-v${{ steps.build_version.outputs.VERSION }}.apk"
 
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: YunYingTV-v${{ steps.new_version.outputs.NEW_VERSION }}
+          name: YunYingTV-v${{ steps.build_version.outputs.VERSION }}
           path: release/*.apk
           retention-days: 30
 
@@ -181,10 +169,10 @@ jobs:
         timeout-minutes: 10
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v${{ steps.new_version.outputs.NEW_VERSION }}
-          name: Release v${{ steps.new_version.outputs.NEW_VERSION }}
+          tag_name: v${{ steps.build_version.outputs.VERSION }}
+          name: Release v${{ steps.build_version.outputs.VERSION }}
           body: |
-            ## YunYingTV v${{ steps.new_version.outputs.NEW_VERSION }}
+            ## YunYingTV v${{ steps.build_version.outputs.VERSION }}
             
             Automated build from GitHub Actions
             
