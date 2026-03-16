@@ -136,16 +136,23 @@ jobs:
           chmod +x android/gradlew
 
       - name: Build APK
+        timeout-minutes: 45
         run: |
           echo "🏗️  Building APK..."
           cd android
+          
+          # 显示 Java 版本和内存信息
+          java -version
+          echo "GRADLE_OPTS: $GRADLE_OPTS"
+          
+          # 清理之前的构建
+          ./gradlew clean || true
+          
+          # 构建 Release APK
           ./gradlew assembleRelease \
             --stacktrace \
-            --no-daemon \
-            --no-configuration-cache \
-            --warning-mode none \
-            -PreactNativeArchitectures=arm64-v8a,armeabi-v7a \
-            -Pandroid.enableDexingArtifactTransform.desugaring=false
+            --info \
+            --no-daemon
         env:
           GRADLE_OPTS: "-Xmx6g -XX:MaxMetaspaceSize=2g -XX:+HeapDumpOnOutOfMemoryError -Dfile.encoding=UTF-8"
           ORG_GRADLE_PROJECT_reactNativeArchitectures: "arm64-v8a,armeabi-v7a"
@@ -154,6 +161,7 @@ jobs:
         run: |
           echo "📦 Verifying APK..."
           ls -lh android/app/build/outputs/apk/release/ || echo "No APK found"
+          test -f android/app/build/outputs/apk/release/app-release.apk || (echo "❌ APK not found!" && exit 1)
 
       - name: Prepare APK
         run: |
