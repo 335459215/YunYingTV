@@ -120,7 +120,8 @@ export class LunaTVAdapter extends API {
       const response = await this._fetch(url);
       const data: LunaTVResponse<LunaTVSearchResult[]> = await response.json();
 
-      const results: SearchResult[] = (data.list || data.data || []).map((item, index) => ({
+      const list = data.list || data.data || [];
+      const results: SearchResult[] = (Array.isArray(list) ? list : [list]).map((item: any, index) => ({
         id: item.vod_id || item.id || index,
         title: item.vod_name,
         poster: item.vod_pic,

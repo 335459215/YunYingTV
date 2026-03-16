@@ -11,6 +11,7 @@ import { useResponsiveLayout } from "@/hooks/useResponsiveLayout";
 import { getCommonResponsiveStyles } from "@/utils/ResponsiveStyles";
 import ResponsiveNavigation from "@/components/navigation/ResponsiveNavigation";
 import ResponsiveHeader from "@/components/navigation/ResponsiveHeader";
+import { FadeIn, ListItemAnimation } from "@/components/AnimationEnhanced";
 
 export default function FavoritesScreen() {
   const { favorites, loading, error, fetchFavorites } = useFavoritesStore();
@@ -24,20 +25,22 @@ export default function FavoritesScreen() {
     fetchFavorites();
   }, [fetchFavorites]);
 
-  const renderItem = ({ item }: { item: Favorite & { key: string }; index: number }) => {
+  const renderItem = ({ item, index }: { item: Favorite & { key: string }; index: number }) => {
     const [source, id] = item.key.split("+");
     return (
-      <VideoCard
-        id={id}
-        source={source}
-        title={item.title}
-        sourceName={item.source_name}
-        poster={item.cover}
-        year={item.year}
-        api={api}
-        episodeIndex={1}
-        progress={0}
-      />
+      <ListItemAnimation index={index} delay={30}>
+        <VideoCard
+          id={id}
+          source={source}
+          title={item.title}
+          sourceName={item.source_name}
+          poster={item.cover}
+          year={item.year}
+          api={api}
+          episodeIndex={1}
+          progress={0}
+        />
+      </ListItemAnimation>
     );
   };
 
@@ -45,7 +48,7 @@ export default function FavoritesScreen() {
   const dynamicStyles = createResponsiveStyles(deviceType, spacing);
 
   const renderFavoritesContent = () => (
-    <>
+    <FadeIn duration={400}>
       {deviceType === 'tv' && (
         <View style={dynamicStyles.headerContainer}>
           <ThemedText style={dynamicStyles.headerTitle}>我的收藏</ThemedText>
@@ -58,7 +61,7 @@ export default function FavoritesScreen() {
         error={error}
         emptyMessage="暂无收藏"
       />
-    </>
+    </FadeIn>
   );
 
   const content = (

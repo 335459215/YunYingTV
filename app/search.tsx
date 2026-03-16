@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect, useMemo } from "react";
 import { View, TextInput, StyleSheet, Alert, Keyboard, TouchableOpacity } from "react-native";
 import { ThemedView } from "@/components/ThemedView";
 import { ThemedText } from "@/components/ThemedText";
@@ -19,6 +19,9 @@ import ResponsiveNavigation from "@/components/navigation/ResponsiveNavigation";
 import ResponsiveHeader from "@/components/navigation/ResponsiveHeader";
 import { DeviceUtils } from "@/utils/DeviceUtils";
 import Logger from '@/utils/Logger';
+import { SmartSearch } from '@/utils/SmartSearch';
+import { useDebounce } from '@/hooks/usePerformanceOptimize';
+import { FadeIn, ListItemAnimation } from '@/components/AnimationEnhanced';
 
 const logger = Logger.withTag('SearchScreen');
 
@@ -38,38 +41,21 @@ export default function SearchScreen() {
   const commonStyles = getCommonResponsiveStyles(responsiveConfig);
   const { deviceType, spacing } = responsiveConfig;
 
-  useEffect(() => {
-    if (lastMessage && targetPage === 'search') {
-      logger.debug("Received remote input:", lastMessage);
-      const realMessage = lastMessage.split("_")[0];
-      setKeyword(realMessage);
-      handleSearch(realMessage);
-      clearMessage(); // Clear the message after processing
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [lastMessage, targetPage]);
-
-  // useEffect(() => {
-  //   // Focus the text input when the screen loads
-  //   const timer = setTimeout(() => {
-  //     textInputRef.current?.focus();
-  //   }, 200);
-  //   return () => clearTimeout(timer);
-  // }, []);
-
-  const handleSearch = async (searchText?: string) => {
-    const term = typeof searchText === "string" ? searchText : keyword;
+  // 使用防抖优化搜索输入
+  const debouncedSearch = useDebounce(async (term: string) => {
     if (!term.trim()) {
-      Keyboard.dismiss();
+      setResults([]);
       return;
     }
-    Keyboard.dismiss();
+    
     setLoading(true);
     setError(null);
     try {
       const response = await api.searchVideos(term);
       if (response.results.length > 0) {
-        setResults(response.results);
+        // 使用智能搜索算法排序
+        const sortedResults = SmartSearch.searchAndSort(response.results, term);
+        setResults(sortedResults);
       } else {
         setError("没有找到相关内容");
       }
@@ -79,6 +65,23 @@ export default function SearchScreen() {
     } finally {
       setLoading(false);
     }
+  }, 300); // 300ms 防抖延迟
+
+  useEffect(() => {
+    if (lastMessage && targetPage === 'search') {
+      logger.debug("Received remote input:", lastMessage);
+      const realMessage = lastMessage.split("_")[0];
+      setKeyword(realMessage);
+      debouncedSearch(realMessage);
+      clearMessage();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [lastMessage, targetPage]);
+
+  const handleSearch = (searchText?: string) => {
+    const term = typeof searchText === "string" ? searchText : keyword;
+    Keyboard.dismiss();
+    debouncedSearch(term);
   };
 
   const onSearchPress = () => handleSearch();
@@ -94,23 +97,25 @@ export default function SearchScreen() {
     showRemoteModal('search');
   };
 
-  const renderItem = ({ item }: { item: SearchResult; index: number }) => (
-    <VideoCard
-      id={item.id.toString()}
-      source={item.source}
-      title={item.title}
-      poster={item.poster}
-      year={item.year}
-      sourceName={item.source_name}
-      api={api}
-    />
+  const renderItem = ({ item, index }: { item: SearchResult; index: number }) => (
+    <ListItemAnimation index={index} delay={30}>
+      <VideoCard
+        id={item.id.toString()}
+        source={item.source}
+        title={item.title}
+        poster={item.poster}
+        year={item.year}
+        sourceName={item.source_name}
+        api={api}
+      />
+    </ListItemAnimation>
   );
 
   // 动态样式
   const dynamicStyles = createResponsiveStyles(deviceType, spacing);
 
   const renderSearchContent = () => (
-    <>
+    <FadeIn duration={400}>
       <View style={dynamicStyles.searchContainer}>
         <TouchableOpacity
           activeOpacity={1}
@@ -161,7 +166,7 @@ export default function SearchScreen() {
         />
       )}
       <RemoteControlModal />
-    </>
+    </FadeIn>
   );
 
   const content = (

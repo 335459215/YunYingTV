@@ -1,4 +1,4 @@
-import React, { useCallback, useRef, useState, useEffect } from "react";
+import React, { useCallback, useRef, useState, useEffect, useMemo } from "react";
 import { View, StyleSheet, ScrollView, ActivityIndicator, TouchableOpacity, BackHandler, NativeSyntheticEvent, NativeScrollEvent } from "react-native";
 import { ThemedText } from "@/components/ThemedText";
 import { useResponsiveLayout } from "@/hooks/useResponsiveLayout";

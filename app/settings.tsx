@@ -21,7 +21,6 @@ import { useSettingsStore } from "@/stores/settingsStore";
 import { useRemoteControlStore } from "@/stores/remoteControlStore";
 import { getCommonResponsiveStyles } from "@/utils/ResponsiveStyles";
 import { DeviceUtils } from "@/utils/DeviceUtils";
-import { BackendSwitcherSection } from "@/components/settings/BackendSwitcherSection";
 import type { TVKeyEvent, InsetsLike } from "@/types/common";
 
 const useTVEventHandler = (handler: (event: TVKeyEvent) => void) => {};
@@ -159,10 +158,6 @@ export default function SettingsScreen() {
   //   },
   // ].filter(Boolean);
   const rawSections = [
-    {
-      component: <BackendSwitcherSection />,
-      key: "backend",
-    },
     deviceType !== "mobile" && {
       component: (
         <RemoteInputSection

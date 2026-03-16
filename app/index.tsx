@@ -1,4 +1,4 @@
-import React, { useEffect, useCallback, useRef, useState } from "react";
+import React, { useEffect, useCallback, useRef, useState, useMemo } from "react";
 import { View, StyleSheet, ActivityIndicator, FlatList, Pressable, Animated, StatusBar, Platform, BackHandler, ToastAndroid } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { ThemedView } from "@/components/ThemedView";
@@ -17,6 +17,8 @@ import ResponsiveNavigation from "@/components/navigation/ResponsiveNavigation";
 import { useApiConfig } from "@/hooks/useApiConfig";
 import { Colors } from "@/constants/Colors";
 import { useFadeIn } from "@/hooks/useAnimation";
+import { useDebounce, useThrottle } from "@/hooks/usePerformanceOptimize";
+import { FadeIn, ListItemAnimation } from "@/components/AnimationEnhanced";
 
 const LOAD_MORE_THRESHOLD = 200;
 
@@ -118,17 +120,27 @@ export default function HomeScreen() {
     }
   }, [apiConfigStatus.needsConfiguration, error, clearError]);
 
-  const handleCategorySelect = (category: Category) => {
+  // 使用节流优化分类选择
+  const throttledCategorySelect = useThrottle((category: Category) => {
     setSelectedTag(null);
     selectCategory(category);
+  }, 300);
+
+  const handleCategorySelect = (category: Category) => {
+    throttledCategorySelect(category);
   };
 
-  const handleTagSelect = (tag: string) => {
+  // 使用节流优化标签选择
+  const throttledTagSelect = useThrottle((tag: string) => {
     setSelectedTag(tag);
     if (selectedCategory) {
       const categoryWithTag = { ...selectedCategory, tag: tag };
       selectCategory(categoryWithTag);
     }
+  }, 300);
+
+  const handleTagSelect = (tag: string) => {
+    throttledTagSelect(tag);
   };
 
   const renderCategory = ({ item, index }: { item: Category; index: number }) => {
@@ -145,22 +157,24 @@ export default function HomeScreen() {
   };
 
   const renderContentItem = ({ item, index }: { item: RowItem; index: number }) => (
-    <VideoCard
-      id={item.id}
-      source={item.source}
-      title={item.title}
-      poster={item.poster}
-      year={item.year}
-      rate={item.rate}
-      progress={item.progress}
-      playTime={item.play_time}
-      episodeIndex={item.episodeIndex}
-      sourceName={item.sourceName}
-      totalEpisodes={item.totalEpisodes}
-      api={api}
-      onRecordDeleted={fetchInitialData}
-      index={index}
-    />
+    <ListItemAnimation index={index} delay={20}>
+      <VideoCard
+        id={item.id}
+        source={item.source}
+        title={item.title}
+        poster={item.poster}
+        year={item.year}
+        rate={item.rate}
+        progress={item.progress}
+        playTime={item.play_time}
+        episodeIndex={item.episodeIndex}
+        sourceName={item.sourceName}
+        totalEpisodes={item.totalEpisodes}
+        api={api}
+        onRecordDeleted={fetchInitialData}
+        index={index}
+      />
+    </ListItemAnimation>
   );
 
   const renderFooter = () => {
@@ -310,41 +324,45 @@ export default function HomeScreen() {
 
       {renderHeader()}
 
-      <Animated.View style={[dynamicStyles.categoryContainer, categoryAnim]}>
-        <FlatList
-          data={categories}
-          renderItem={renderCategory}
-          keyExtractor={(item) => item.title}
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={dynamicStyles.categoryListContent}
-        />
-      </Animated.View>
-
-      {selectedCategory && selectedCategory.tags && (
+      <FadeIn delay={100} duration={500}>
         <Animated.View style={[dynamicStyles.categoryContainer, categoryAnim]}>
           <FlatList
-            data={selectedCategory.tags}
-            renderItem={({ item, index }) => {
-              const isSelected = selectedTag === item;
-              return (
-                <StyledButton
-                  hasTVPreferredFocus={index === 0}
-                  text={item}
-                  onPress={() => handleTagSelect(item)}
-                  isSelected={isSelected}
-                  style={dynamicStyles.categoryButton}
-                  textStyle={dynamicStyles.categoryText}
-                  variant="ghost"
-                />
-              );
-            }}
-            keyExtractor={(item) => item}
+            data={categories}
+            renderItem={renderCategory}
+            keyExtractor={(item) => item.title}
             horizontal
             showsHorizontalScrollIndicator={false}
             contentContainerStyle={dynamicStyles.categoryListContent}
           />
         </Animated.View>
+      </FadeIn>
+
+      {selectedCategory && selectedCategory.tags && (
+        <FadeIn delay={200} duration={500}>
+          <Animated.View style={[dynamicStyles.categoryContainer, categoryAnim]}>
+            <FlatList
+              data={selectedCategory.tags}
+              renderItem={({ item, index }) => {
+                const isSelected = selectedTag === item;
+                return (
+                  <StyledButton
+                    hasTVPreferredFocus={index === 0}
+                    text={item}
+                    onPress={() => handleTagSelect(item)}
+                    isSelected={isSelected}
+                    style={dynamicStyles.categoryButton}
+                    textStyle={dynamicStyles.categoryText}
+                    variant="ghost"
+                  />
+                );
+              }}
+              keyExtractor={(item) => item}
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={dynamicStyles.categoryListContent}
+            />
+          </Animated.View>
+        </FadeIn>
       )}
 
       {apiConfigStatus.isValidating ? (
