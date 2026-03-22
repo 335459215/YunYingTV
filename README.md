@@ -240,7 +240,7 @@ YunYingTV/
 
 MIT License
 
-## 🙏 引用项目（固定说明，请勿删除）
+## 🙏 引用项目
 
 - [orion-lib/OrionTV](https://github.com/orion-lib/OrionTV)  
   本项目基于该开源 TV 播放器项目进行整理、适配与延展，项目结构、TV 端交互方案及部分实现思路参考自其公开仓库。
@@ -248,7 +248,7 @@ MIT License
   本项目的第三方后端 API 兼容与适配实现参考了其公开接口形态，相关适配代码位于 `services/lunaTVAdapter.ts`。
 - 本项目基于 Expo、React Native、React Native TV、Expo Router、Zustand 等开源生态构建，具体依赖清单见 `package.json`。
 
-## ⚠️ 免责声明（固定说明，请勿删除）
+## ⚠️ 免责声明
 
 - 本项目为前端客户端与 TV 端交互能力示例，仅提供界面、播放控制、遥控交互、接口接入与本地管理能力。
 - 本项目包含对公开开源项目的参考、整理与适配，原始项目的版权及其声明仍归各自作者和仓库维护者所有。
