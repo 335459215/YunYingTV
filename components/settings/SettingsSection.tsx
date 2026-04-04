@@ -12,7 +12,7 @@ interface SettingsSectionProps {
   focusable?: boolean;
 }
 
-export const SettingsSection: React.FC<SettingsSectionProps> = ({ children, onFocus, onBlur, onPress, focusable = false }) => {
+export const SettingsSection: React.FC<SettingsSectionProps> = React.memo(({ children, onFocus, onBlur, onPress, focusable = false }) => {
   const [isFocused, setIsFocused] = useState(false);
   const deviceType = useResponsiveLayout().deviceType;
 
@@ -48,7 +48,9 @@ export const SettingsSection: React.FC<SettingsSectionProps> = ({ children, onFo
       </Pressable>
     </ThemedView>
   );
-};
+});
+
+SettingsSection.displayName = 'SettingsSection';
 
 const styles = StyleSheet.create({
   section: {

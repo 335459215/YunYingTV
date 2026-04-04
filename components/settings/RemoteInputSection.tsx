@@ -17,7 +17,7 @@ interface RemoteInputSectionProps {
   onPress?: () => void;
 }
 
-export const RemoteInputSection: React.FC<RemoteInputSectionProps> = ({ onChanged, onFocus, onBlur, onPress }) => {
+export const RemoteInputSection: React.FC<RemoteInputSectionProps> = React.memo(({ onChanged, onFocus, onBlur, onPress }) => {
   const { remoteInputEnabled, setRemoteInputEnabled } = useSettingsStore();
   const { isServerRunning, serverUrl, error } = useRemoteControlStore();
   const [isFocused, setIsFocused] = React.useState(false);
@@ -113,7 +113,9 @@ export const RemoteInputSection: React.FC<RemoteInputSectionProps> = ({ onChange
       )}
     </SettingsSection>
   );
-};
+});
+
+RemoteInputSection.displayName = 'RemoteInputSection';
 
 const styles = StyleSheet.create({
   settingItem: {

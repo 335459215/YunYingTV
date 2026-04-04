@@ -68,7 +68,7 @@ const createResponsiveStyles = (deviceType: string) => {
   });
 };
 
-export default function PlayScreen() {
+export default React.memo(function PlayScreen() {
   const videoRef = useRef<Video>(null);
   const router = useRouter();
   useKeepAwake();
@@ -246,4 +246,4 @@ export default function PlayScreen() {
       <SpeedSelectionModal />
     </ThemedView>
   );
-}
+});

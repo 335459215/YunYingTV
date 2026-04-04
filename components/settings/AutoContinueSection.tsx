@@ -11,7 +11,7 @@ interface AutoContinueSectionProps {
   onFocus?: () => void;
 }
 
-export const AutoContinueSection: React.FC<AutoContinueSectionProps> = ({ onChanged, onFocus }) => {
+export const AutoContinueSection: React.FC<AutoContinueSectionProps> = React.memo(({ onChanged, onFocus }) => {
   const { autoContinuePlayback, setAutoContinuePlayback } = useSettingsStore();
   const responsiveConfig = useResponsiveLayout();
   const commonStyles = getCommonResponsiveStyles(responsiveConfig);
@@ -46,7 +46,9 @@ export const AutoContinueSection: React.FC<AutoContinueSectionProps> = ({ onChan
       </View>
     </ThemedView>
   );
-};
+});
+
+AutoContinueSection.displayName = 'AutoContinueSection';
 
 const styles = StyleSheet.create({
   container: {

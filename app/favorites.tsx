@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useCallback, useMemo } from "react";
 import { View, StyleSheet } from "react-native";
 import { ThemedView } from "@/components/ThemedView";
 import { ThemedText } from "@/components/ThemedText";
@@ -13,7 +13,7 @@ import ResponsiveNavigation from "@/components/navigation/ResponsiveNavigation";
 import ResponsiveHeader from "@/components/navigation/ResponsiveHeader";
 import { FadeIn, ListItemAnimation } from "@/components/AnimationEnhanced";
 
-export default function FavoritesScreen() {
+export default React.memo(function FavoritesScreen() {
   const { favorites, loading, error, fetchFavorites } = useFavoritesStore();
 
   // 响应式布局配置
@@ -25,7 +25,7 @@ export default function FavoritesScreen() {
     fetchFavorites();
   }, [fetchFavorites]);
 
-  const renderItem = ({ item, index }: { item: Favorite & { key: string }; index: number }) => {
+  const renderItem = useCallback(({ item, index }: { item: Favorite & { key: string }; index: number }) => {
     const [source, id] = item.key.split("+");
     return (
       <ListItemAnimation index={index} delay={30}>
@@ -42,10 +42,10 @@ export default function FavoritesScreen() {
         />
       </ListItemAnimation>
     );
-  };
+  }, []);
 
   // 动态样式
-  const dynamicStyles = createResponsiveStyles(deviceType, spacing);
+  const dynamicStyles = useMemo(() => createResponsiveStyles(deviceType, spacing), [deviceType, spacing]);
 
   const renderFavoritesContent = () => (
     <FadeIn duration={400}>
@@ -81,7 +81,7 @@ export default function FavoritesScreen() {
       {content}
     </ResponsiveNavigation>
   );
-}
+});
 
 const createResponsiveStyles = (deviceType: string, spacing: number) => {
   const isMobile = deviceType === 'mobile';

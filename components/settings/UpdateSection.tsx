@@ -3,7 +3,7 @@ import { View, StyleSheet, Platform } from "react-native";
 import { ThemedText } from "../ThemedText";
 import { useUpdateStore } from "@/stores/updateStore";
 
-export function UpdateSection() {
+export const UpdateSection = React.memo(function UpdateSection() {
   const { currentVersion } = useUpdateStore();
 
   return (
@@ -14,7 +14,9 @@ export function UpdateSection() {
       </View>
     </View>
   );
-}
+});
+
+UpdateSection.displayName = 'UpdateSection';
 
 const styles = StyleSheet.create({
   sectionContainer: {

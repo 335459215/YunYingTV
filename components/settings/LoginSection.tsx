@@ -14,7 +14,7 @@ interface LoginSectionProps {
   onFocus?: () => void;
 }
 
-export const LoginSection: React.FC<LoginSectionProps> = ({ onChanged, onFocus }) => {
+export const LoginSection: React.FC<LoginSectionProps> = React.memo(({ onChanged, onFocus }) => {
   const { currentServer, currentAccount, serverConfig } = useSettingsStore();
   const { checkLoginStatus } = useAuthStore();
   const { refreshPlayRecords } = useHomeStore();
@@ -109,7 +109,9 @@ export const LoginSection: React.FC<LoginSectionProps> = ({ onChanged, onFocus }
       </View>
     </SettingsSection>
   );
-};
+});
+
+LoginSection.displayName = 'LoginSection';
 
 const styles = StyleSheet.create({
   container: {

@@ -13,7 +13,7 @@ interface VideoSourceSectionProps {
   onBlur?: () => void;
 }
 
-export const VideoSourceSection: React.FC<VideoSourceSectionProps> = ({ onChanged, onFocus, onBlur }) => {
+export const VideoSourceSection: React.FC<VideoSourceSectionProps> = React.memo(({ onChanged, onFocus, onBlur }) => {
   const [focusedIndex, setFocusedIndex] = useState<number | null>(null);
   const [isSectionFocused, setIsSectionFocused] = useState(false);
   const { videoSource } = useSettingsStore();
@@ -99,7 +99,9 @@ export const VideoSourceSection: React.FC<VideoSourceSectionProps> = ({ onChange
       )}
     </SettingsSection>
   );
-};
+});
+
+VideoSourceSection.displayName = 'VideoSourceSection';
 
 const styles = StyleSheet.create({
   sectionTitle: {

@@ -10,7 +10,7 @@ interface AccountManagerSectionProps {
   onFocus?: () => void;
 }
 
-export const AccountManagerSection: React.FC<AccountManagerSectionProps> = ({ onChanged, onFocus }) => {
+export const AccountManagerSection: React.FC<AccountManagerSectionProps> = React.memo(({ onChanged, onFocus }) => {
   const { servers, currentServer, accounts, addAccount, deleteAccount, setActiveAccount } = useSettingsStore();
   const [showAddModal, setShowAddModal] = useState(false);
   const [newAccountName, setNewAccountName] = useState("");
@@ -197,7 +197,9 @@ export const AccountManagerSection: React.FC<AccountManagerSectionProps> = ({ on
       </View>
     </SettingsSection>
   );
-};
+});
+
+AccountManagerSection.displayName = 'AccountManagerSection';
 
 const styles = StyleSheet.create({
   container: {

@@ -133,4 +133,4 @@ const createStyles = (spacing: number, deviceType: string, insets: InsetsLike) =
   });
 };
 
-export default ResponsiveHeader;
+export default React.memo(ResponsiveHeader);

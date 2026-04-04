@@ -17,7 +17,7 @@ interface StyledButtonProps extends PressableProps {
   textStyle?: StyleProp<TextStyle>;
 }
 
-export const StyledButton = forwardRef<View, StyledButtonProps>(
+export const StyledButton = React.memo(forwardRef<View, StyledButtonProps>(
   ({ children, text, variant = "default", size = "medium", isSelected = false, style, textStyle, ...rest }, ref) => {
     const [isFocused, setIsFocused] = React.useState(false);
     const animationStyle = useButtonAnimation(isFocused);
@@ -216,6 +216,6 @@ export const StyledButton = forwardRef<View, StyledButtonProps>(
       </Animated.View>
     );
   }
-);
+));
 
 StyledButton.displayName = "StyledButton";

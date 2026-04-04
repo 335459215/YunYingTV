@@ -10,7 +10,7 @@ interface ServerManagerSectionProps {
   onFocus?: () => void;
 }
 
-export const ServerManagerSection: React.FC<ServerManagerSectionProps> = ({ onChanged, onFocus }) => {
+export const ServerManagerSection: React.FC<ServerManagerSectionProps> = React.memo(({ onChanged, onFocus }) => {
   const { servers, addServer, deleteServer, setActiveServer } = useSettingsStore();
   const [showAddModal, setShowAddModal] = useState(false);
   const [newServerName, setNewServerName] = useState("");
@@ -145,7 +145,9 @@ export const ServerManagerSection: React.FC<ServerManagerSectionProps> = ({ onCh
       </View>
     </SettingsSection>
   );
-};
+});
+
+ServerManagerSection.displayName = 'ServerManagerSection';
 
 const styles = StyleSheet.create({
   container: {

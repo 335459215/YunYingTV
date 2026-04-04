@@ -6,7 +6,7 @@ interface VideoLoadingAnimationProps {
   showProgressBar?: boolean;
 }
 
-const VideoLoadingAnimation: React.FC<VideoLoadingAnimationProps> = ({ showProgressBar = true }) => {
+const VideoLoadingAnimation: React.FC<VideoLoadingAnimationProps> = React.memo(({ showProgressBar = true }) => {
   const floatAnim = useRef(new Animated.Value(0)).current;
   const pulseAnim = useRef(new Animated.Value(0)).current;
   const bounceAnims = [
@@ -217,7 +217,7 @@ const VideoLoadingAnimation: React.FC<VideoLoadingAnimationProps> = ({ showProgr
       </View>
     </View>
   );
-};
+});
 
 const styles = StyleSheet.create({
   container: {
@@ -325,5 +325,7 @@ const styles = StyleSheet.create({
     right: "30%",
   },
 });
+
+VideoLoadingAnimation.displayName = 'VideoLoadingAnimation';
 
 export default VideoLoadingAnimation;

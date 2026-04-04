@@ -22,7 +22,7 @@ export interface APIConfigSectionRef {
   setInputValue: (value: string) => void;
 }
 
-export const APIConfigSection = forwardRef<APIConfigSectionRef, APIConfigSectionProps>(
+export const APIConfigSection = React.memo(forwardRef<APIConfigSectionRef, APIConfigSectionProps>(
   ({ onChanged, onFocus, onBlur, onPress, hideDescription = false }, ref) => {
     const { apiBaseUrl, setApiBaseUrl, remoteInputEnabled } = useSettingsStore();
     const { serverUrl } = useRemoteControlStore();
@@ -123,7 +123,7 @@ export const APIConfigSection = forwardRef<APIConfigSectionRef, APIConfigSection
       </SettingsSection>
     );
   }
-);
+));
 
 APIConfigSection.displayName = "APIConfigSection";
 

@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import { View, TextInput, StyleSheet, Alert, Keyboard, TouchableOpacity } from "react-native";
 import { ThemedView } from "@/components/ThemedView";
 import { ThemedText } from "@/components/ThemedText";
@@ -25,7 +25,7 @@ import { FadeIn, ListItemAnimation } from '@/components/AnimationEnhanced';
 
 const logger = Logger.withTag('SearchScreen');
 
-export default function SearchScreen() {
+export default React.memo(function SearchScreen() {
   const [keyword, setKeyword] = useState("");
   const [results, setResults] = useState<SearchResult[]>([]);
   const [loading, setLoading] = useState(false);
@@ -78,15 +78,17 @@ export default function SearchScreen() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [lastMessage, targetPage]);
 
-  const handleSearch = (searchText?: string) => {
+  const handleSearch = useCallback((searchText?: string) => {
     const term = typeof searchText === "string" ? searchText : keyword;
     Keyboard.dismiss();
     debouncedSearch(term);
-  };
+  }, [keyword, debouncedSearch]);
 
-  const onSearchPress = () => handleSearch();
+  const onSearchPress = useCallback(() => {
+    handleSearch();
+  }, [handleSearch]);
 
-  const handleQrPress = () => {
+  const handleQrPress = useCallback(() => {
     if (!remoteInputEnabled) {
       Alert.alert("远程输入未启用", "请先在设置页面中启用远程输入功能", [
         { text: "取消", style: "cancel" },
@@ -95,9 +97,9 @@ export default function SearchScreen() {
       return;
     }
     showRemoteModal('search');
-  };
+  }, [remoteInputEnabled, showRemoteModal, router]);
 
-  const renderItem = ({ item, index }: { item: SearchResult; index: number }) => (
+  const renderItem = useCallback(({ item, index }: { item: SearchResult; index: number }) => (
     <ListItemAnimation index={index} delay={30}>
       <VideoCard
         id={item.id.toString()}
@@ -109,10 +111,10 @@ export default function SearchScreen() {
         api={api}
       />
     </ListItemAnimation>
-  );
+  ), []);
 
   // 动态样式
-  const dynamicStyles = createResponsiveStyles(deviceType, spacing);
+  const dynamicStyles = useMemo(() => createResponsiveStyles(deviceType, spacing), [deviceType, spacing]);
 
   const renderSearchContent = () => (
     <FadeIn duration={400}>
@@ -186,7 +188,7 @@ export default function SearchScreen() {
       {content}
     </ResponsiveNavigation>
   );
-}
+});
 
 const createResponsiveStyles = (deviceType: string, spacing: number) => {
   const isMobile = deviceType === 'mobile';

@@ -12,7 +12,7 @@ interface LivePlayerProps {
 
 const PLAYBACK_TIMEOUT = 15000; // 15 seconds
 
-export default function LivePlayer({ streamUrl, channelTitle, onPlaybackStatusUpdate }: LivePlayerProps) {
+export default React.memo(function LivePlayer({ streamUrl, channelTitle, onPlaybackStatusUpdate }: LivePlayerProps) {
   const video = useRef<Video>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isTimeout, setIsTimeout] = useState(false);
@@ -111,7 +111,7 @@ export default function LivePlayer({ streamUrl, channelTitle, onPlaybackStatusUp
       )}
     </View>
   );
-}
+});
 
 const styles = StyleSheet.create({
   container: {

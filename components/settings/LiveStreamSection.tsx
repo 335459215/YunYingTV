@@ -22,7 +22,7 @@ export interface LiveStreamSectionRef {
   focus: () => void;
 }
 
-export const LiveStreamSection = forwardRef<LiveStreamSectionRef, LiveStreamSectionProps>(
+export const LiveStreamSection = React.memo(forwardRef<LiveStreamSectionRef, LiveStreamSectionProps>(
   ({ onChanged, onFocus, onBlur, onPress }, ref) => {
     const { m3uUrl, setM3uUrl, remoteInputEnabled } = useSettingsStore();
     const { serverUrl } = useRemoteControlStore();
@@ -127,7 +127,7 @@ export const LiveStreamSection = forwardRef<LiveStreamSectionRef, LiveStreamSect
       </SettingsSection>
     );
   }
-);
+));
 
 LiveStreamSection.displayName = "LiveStreamSection";
 

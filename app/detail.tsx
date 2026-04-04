@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useCallback, useMemo } from "react";
 import { View, StyleSheet, Image, ScrollView, ActivityIndicator } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { ThemedView } from "@/components/ThemedView";
@@ -12,7 +12,7 @@ import { getCommonResponsiveStyles } from "@/utils/ResponsiveStyles";
 import ResponsiveNavigation from "@/components/navigation/ResponsiveNavigation";
 import ResponsiveHeader from "@/components/navigation/ResponsiveHeader";
 
-export default function DetailScreen() {
+export default React.memo(function DetailScreen() {
   const { q, source, id } = useLocalSearchParams<{ q: string; source?: string; id?: string }>();
   const router = useRouter();
 
@@ -43,20 +43,21 @@ export default function DetailScreen() {
     };
   }, [abort, init, q, source, id]);
 
-  const handlePlay = (episodeIndex: number) => {
+  const handlePlay = useCallback((episodeIndex: number) => {
     if (!detail) return;
-    abort(); // Cancel any ongoing fetches
+    abort();
     router.push({
       pathname: "/play",
       params: {
-        // Pass necessary identifiers, the rest will be in the store
         q: detail.title,
         source: detail.source,
         id: detail.id.toString(),
         episodeIndex: episodeIndex.toString(),
       },
     });
-  };
+  }, [detail, abort, router]);
+
+  const dynamicStyles = useMemo(() => createResponsiveStyles(deviceType, spacing), [deviceType, spacing]);
 
   if (loading) {
     return <VideoLoadingAnimation showProgressBar={false} />;
@@ -101,9 +102,6 @@ export default function DetailScreen() {
       </ResponsiveNavigation>
     );
   }
-
-  // 动态样式
-  const dynamicStyles = createResponsiveStyles(deviceType, spacing);
 
   const renderDetailContent = () => {
     if (deviceType === 'mobile') {
@@ -292,7 +290,7 @@ export default function DetailScreen() {
       {content}
     </ResponsiveNavigation>
   );
-}
+});
 
 const createResponsiveStyles = (deviceType: string, spacing: number) => {
   const isTV = deviceType === 'tv';
