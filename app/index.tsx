@@ -6,7 +6,7 @@ import { ThemedText } from "@/components/ThemedText";
 import { api } from "@/services/api";
 import VideoCard from "@/components/VideoCard";
 import { useFocusEffect, useRouter } from "expo-router";
-import { Search, Settings, LogOut, Heart, Tv, Server as ServerIcon, ChevronDown, RefreshCw } from "lucide-react-native";
+import { Search, Settings, LogOut, Heart, Tv, Server as ServerIcon, ChevronDown } from "lucide-react-native";
 import { StyledButton } from "@/components/StyledButton";
 import useHomeStore, { RowItem, Category } from "@/stores/homeStore";
 import useAuthStore from "@/stores/authStore";
@@ -206,9 +206,6 @@ export default React.memo(function HomeScreen() {
             </Pressable>
           </View>
           <View style={dynamicStyles.mobileHeaderRight}>
-            <Pressable onPress={onRefresh} style={dynamicStyles.refreshButton}>
-              <RefreshCw size={20} color={Colors.dark.textSecondary} />
-            </Pressable>
             <Pressable style={dynamicStyles.iconButton} onPress={() => router.push("/search")}>
               <Search size={20} color={colorScheme === "dark" ? "#F0F2F5" : "#000"} />
             </Pressable>
@@ -305,7 +302,6 @@ export default React.memo(function HomeScreen() {
   const dynamicStyles = useMemo(() => StyleSheet.create({
     container: {
       flex: 1,
-      paddingTop: deviceType === "mobile" ? insets.top : deviceType === "tablet" ? insets.top + 20 : 40,
       backgroundColor: Colors.dark.background,
     },
     mobileHeader: {
@@ -313,11 +309,10 @@ export default React.memo(function HomeScreen() {
       justifyContent: "space-between",
       alignItems: "center",
       paddingHorizontal: spacing,
-      paddingVertical: spacing * 0.6,
+      paddingVertical: spacing * 0.4,
       backgroundColor: Colors.dark.surfaceElevated,
-      borderBottomWidth: 1,
+      borderBottomWidth: StyleSheet.hairlineWidth,
       borderBottomColor: Colors.dark.border,
-      ...Shadows.dark.sm,
     },
     mobileHeaderLeft: {
       flexDirection: "row",
@@ -349,11 +344,6 @@ export default React.memo(function HomeScreen() {
     },
     serverBadgeTextInactive: {
       color: Colors.dark.textTertiary,
-    },
-    refreshButton: {
-      padding: 6,
-      marginRight: 4,
-      borderRadius: BorderRadius.sm,
     },
     iconButton: {
       padding: 6,
@@ -514,22 +504,33 @@ export default React.memo(function HomeScreen() {
       paddingBottom: spacing * 4,
     },
     emptyStateIcon: {
+      marginBottom: spacing * 2.5,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    iconGlowRing: {
+      width: 80,
+      height: 80,
+      borderRadius: 40,
+      backgroundColor: "rgba(0, 201, 107, 0.08)",
+      alignItems: "center",
+      justifyContent: "center",
       marginBottom: spacing * 2,
-      opacity: 0.6,
     },
     emptyStateTitle: {
-      fontSize: 20,
-      fontWeight: "700",
+      fontSize: 22,
+      fontWeight: "800",
       color: Colors.dark.text,
       textAlign: "center",
-      marginBottom: spacing,
+      marginBottom: spacing * 0.6,
+      letterSpacing: 1,
     },
     emptyStateDesc: {
       fontSize: 14,
       color: Colors.dark.textSecondary,
       textAlign: "center",
       lineHeight: 22,
-      marginBottom: spacing * 1.5,
+      marginBottom: spacing * 2,
     },
   }), [deviceType, spacing, insets, isTV]);
 
@@ -584,19 +585,11 @@ export default React.memo(function HomeScreen() {
 
   const renderEmptyState = () => (
     <View style={dynamicStyles.emptyStateContainer}>
-      <View style={dynamicStyles.emptyStateIcon}>
-        <ServerIcon size={64} color={Colors.dark.textTertiary} strokeWidth={1.5} />
-      </View>
+      <View style={dynamicStyles.iconGlowRing} />
+      <Tv size={52} color={Colors.dark.primary} strokeWidth={1.2} />
       <ThemedText style={dynamicStyles.emptyStateTitle}>欢迎使用云影TV</ThemedText>
-      <ThemedText style={dynamicStyles.emptyStateDesc}>
-        请先添加视频源服务器地址，即可开始浏览精彩内容
-      </ThemedText>
-      <StyledButton
-        text="前往设置"
-        onPress={() => router.push("/settings")}
-        variant="primary"
-        style={{ minWidth: 160 }}
-      />
+      <ThemedText style={dynamicStyles.emptyStateDesc}>请先添加视频源服务器地址，即可开始浏览精彩内容</ThemedText>
+      <StyledButton text="前往设置" onPress={() => router.push("/settings")} variant="primary" style={{ minWidth: 160 }} />
     </View>
   );
 
