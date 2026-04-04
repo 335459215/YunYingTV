@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, StyleSheet, TouchableOpacity, StatusBar, Platform } from 'react-native';
+import { View, StyleSheet, TouchableOpacity, StatusBar } from 'react-native';
 import { useRouter } from 'expo-router';
 import { ArrowLeft } from 'lucide-react-native';
 import { ThemedText } from '@/components/ThemedText';
@@ -7,6 +7,7 @@ import { useResponsiveLayout } from '@/hooks/useResponsiveLayout';
 import { DeviceUtils } from '@/utils/DeviceUtils';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { InsetsLike } from '@/types/common';
+import { Colors, Shadows, BorderRadius } from '@/constants/Colors';
 
 interface ResponsiveHeaderProps {
   title?: string;
@@ -24,8 +25,7 @@ const ResponsiveHeader: React.FC<ResponsiveHeaderProps> = ({
   const router = useRouter();
   const { deviceType, spacing } = useResponsiveLayout();
   const insets = useSafeAreaInsets();
-  
-  // TV端不显示Header，使用现有的页面内导航
+
   if (deviceType === 'tv') {
     return null;
   }
@@ -42,10 +42,9 @@ const ResponsiveHeader: React.FC<ResponsiveHeaderProps> = ({
 
   return (
     <>
-      {Platform.OS === 'android' && <StatusBar backgroundColor="#1c1c1e" barStyle="light-content" />}
+      <StatusBar backgroundColor={Colors.dark.surfaceElevated} barStyle="light-content" />
       <View style={dynamicStyles.container}>
         <View style={dynamicStyles.content}>
-          {/* 左侧区域 */}
           <View style={dynamicStyles.leftSection}>
             {showBackButton && (
               <TouchableOpacity
@@ -53,12 +52,11 @@ const ResponsiveHeader: React.FC<ResponsiveHeaderProps> = ({
                 style={dynamicStyles.backButton}
                 activeOpacity={0.7}
               >
-                <ArrowLeft size={20} color="#fff" strokeWidth={2} />
+                <ArrowLeft size={20} color={Colors.dark.text} strokeWidth={2} />
               </TouchableOpacity>
             )}
           </View>
 
-          {/* 中间标题区域 */}
           <View style={dynamicStyles.centerSection}>
             {title && (
               <ThemedText style={dynamicStyles.title} numberOfLines={1}>
@@ -67,7 +65,6 @@ const ResponsiveHeader: React.FC<ResponsiveHeaderProps> = ({
             )}
           </View>
 
-          {/* 右侧区域 */}
           <View style={dynamicStyles.rightSection}>
             {rightComponent}
           </View>
@@ -79,21 +76,14 @@ const ResponsiveHeader: React.FC<ResponsiveHeaderProps> = ({
 
 const createStyles = (spacing: number, deviceType: string, insets: InsetsLike) => {
   const minTouchTarget = DeviceUtils.getMinTouchTargetSize();
-  
+
   return StyleSheet.create({
     container: {
-      backgroundColor: '#1c1c1e',
+      backgroundColor: Colors.dark.surfaceElevated,
       paddingTop: insets.top,
-      borderBottomWidth: 1,
-      borderBottomColor: '#333',
-      shadowColor: '#000',
-      shadowOffset: {
-        width: 0,
-        height: 2,
-      },
-      shadowOpacity: 0.1,
-      shadowRadius: 3,
-      elevation: 5,
+      borderBottomWidth: 0.5,
+      borderBottomColor: Colors.dark.border,
+      ...Shadows.dark.sm,
     },
     content: {
       flexDirection: 'row',
@@ -123,12 +113,12 @@ const createStyles = (spacing: number, deviceType: string, insets: InsetsLike) =
       height: minTouchTarget,
       justifyContent: 'center',
       alignItems: 'center',
-      borderRadius: minTouchTarget / 2,
+      borderRadius: BorderRadius.full,
     },
     title: {
       fontSize: DeviceUtils.getOptimalFontSize(deviceType === 'mobile' ? 18 : 20),
-      fontWeight: '600',
-      color: '#fff',
+      fontWeight: '700',
+      color: Colors.dark.text,
     },
   });
 };

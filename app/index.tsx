@@ -6,16 +6,18 @@ import { ThemedText } from "@/components/ThemedText";
 import { api } from "@/services/api";
 import VideoCard from "@/components/VideoCard";
 import { useFocusEffect, useRouter } from "expo-router";
-import { Search, Settings, LogOut, Heart, Tv } from "lucide-react-native";
+import { Search, Settings, LogOut, Heart, Tv, Server as ServerIcon, ChevronDown, RefreshCw } from "lucide-react-native";
 import { StyledButton } from "@/components/StyledButton";
 import useHomeStore, { RowItem, Category } from "@/stores/homeStore";
 import useAuthStore from "@/stores/authStore";
+import { useSettingsStore } from "@/stores/settingsStore";
+import type { Server } from "@/services/storage";
 import CustomScrollView from "@/components/CustomScrollView";
 import { useResponsiveLayout } from "@/hooks/useResponsiveLayout";
 import { getCommonResponsiveStyles } from "@/utils/ResponsiveStyles";
 import ResponsiveNavigation from "@/components/navigation/ResponsiveNavigation";
 import { useApiConfig } from "@/hooks/useApiConfig";
-import { Colors } from "@/constants/Colors";
+import { Colors, Shadows, BorderRadius } from "@/constants/Colors";
 import { useFadeIn } from "@/hooks/useAnimation";
 import { useThrottle } from "@/hooks/usePerformanceOptimize";
 import { FadeIn, ListItemAnimation } from "@/components/AnimationEnhanced";
@@ -27,6 +29,8 @@ export default React.memo(function HomeScreen() {
   const colorScheme = "dark";
   const [selectedTag, setSelectedTag] = useState<string | null>(null);
   const insets = useSafeAreaInsets();
+  const [refreshing, setRefreshing] = useState(false);
+  const [showServerMenu, setShowServerMenu] = useState(false);
 
   const responsiveConfig = useResponsiveLayout();
   const commonStyles = getCommonResponsiveStyles(responsiveConfig);
@@ -47,8 +51,14 @@ export default React.memo(function HomeScreen() {
   } = useHomeStore();
   const { isLoggedIn, logout } = useAuthStore();
   const apiConfigStatus = useApiConfig();
+  const { servers, currentServer, setActiveServer, loadServers } = useSettingsStore();
 
-  // 使用新的动画系统
+  const isTV = deviceType === "tv";
+  const hasServer = apiConfigStatus.isConfigured && !apiConfigStatus.needsConfiguration;
+  const hasMultipleServers = servers.length > 1;
+
+  const lastTapRef = useRef<number>(0);
+
   const headerAnim = useFadeIn(0, 500);
   const categoryAnim = useFadeIn(100, 500);
   const contentAnim = useFadeIn(200, 600);
@@ -56,7 +66,8 @@ export default React.memo(function HomeScreen() {
   useFocusEffect(
     useCallback(() => {
       refreshPlayRecords();
-    }, [refreshPlayRecords])
+      loadServers();
+    }, [refreshPlayRecords, loadServers])
   );
 
   const backPressTimeRef = useRef<number | null>(null);
@@ -64,27 +75,28 @@ export default React.memo(function HomeScreen() {
   useFocusEffect(
     useCallback(() => {
       const handleBackPress = () => {
+        if (showServerMenu) {
+          setShowServerMenu(false);
+          return true;
+        }
         const now = Date.now();
-
         if (!backPressTimeRef.current || now - backPressTimeRef.current > 2000) {
           backPressTimeRef.current = now;
           ToastAndroid.show("再按一次返回键退出", ToastAndroid.SHORT);
           return true;
         }
-
         BackHandler.exitApp();
         return true;
       };
 
       if (Platform.OS === "android") {
         const backHandler = BackHandler.addEventListener("hardwareBackPress", handleBackPress);
-
         return () => {
           backHandler.remove();
           backPressTimeRef.current = null;
         };
       }
-    }, [])
+    }, [showServerMenu])
   );
 
   useEffect(() => {
@@ -97,7 +109,7 @@ export default React.memo(function HomeScreen() {
       return;
     }
 
-    if (apiConfigStatus.isConfigured && !apiConfigStatus.needsConfiguration) {
+    if (hasServer) {
       if (selectedCategory.tags && selectedCategory.tag) {
         fetchInitialData();
       }
@@ -108,8 +120,7 @@ export default React.memo(function HomeScreen() {
   }, [
     selectedCategory,
     selectedCategory?.tag,
-    apiConfigStatus.isConfigured,
-    apiConfigStatus.needsConfiguration,
+    hasServer,
     fetchInitialData,
     selectCategory,
   ]);
@@ -120,7 +131,25 @@ export default React.memo(function HomeScreen() {
     }
   }, [apiConfigStatus.needsConfiguration, error, clearError]);
 
-  // 使用节流优化分类选择
+  const onRefresh = useCallback(async () => {
+    if (!hasServer) return;
+    setRefreshing(true);
+    try {
+      await fetchInitialData();
+    } finally {
+      setRefreshing(false);
+    }
+  }, [hasServer, fetchInitialData]);
+
+  const handleDoubleTapRefresh = useCallback(() => {
+    const now = Date.now();
+    if (now - lastTapRef.current < 300) {
+      onRefresh();
+      ToastAndroid.show("正在刷新...", ToastAndroid.SHORT);
+    }
+    lastTapRef.current = now;
+  }, [onRefresh]);
+
   const throttledCategorySelect = useThrottle((category: Category) => {
     setSelectedTag(null);
     selectCategory(category);
@@ -130,7 +159,6 @@ export default React.memo(function HomeScreen() {
     throttledCategorySelect(category);
   }, [throttledCategorySelect]);
 
-  // 使用节流优化标签选择
   const throttledTagSelect = useThrottle((tag: string) => {
     setSelectedTag(tag);
     if (selectedCategory) {
@@ -143,6 +171,12 @@ export default React.memo(function HomeScreen() {
     throttledTagSelect(tag);
   }, [throttledTagSelect]);
 
+  const handleServerSwitch = useCallback(async (serverId: string) => {
+    await setActiveServer(serverId);
+    setShowServerMenu(false);
+    ToastAndroid.show("已切换服务器", ToastAndroid.SHORT);
+  }, [setActiveServer]);
+
   const renderFooter = () => {
     if (!loadingMore) return null;
     return (
@@ -153,24 +187,90 @@ export default React.memo(function HomeScreen() {
     );
   };
 
-  const isTV = deviceType === "tv";
-
   const renderHeader = () => {
     if (deviceType === "mobile") {
-      return null;
+      return (
+        <Animated.View style={[dynamicStyles.mobileHeader, headerAnim]}>
+          <View style={dynamicStyles.mobileHeaderLeft}>
+            <Pressable
+              style={[dynamicStyles.serverBadge, hasMultipleServers && dynamicStyles.serverBadgeMulti]}
+              onPress={() => hasMultipleServers ? setShowServerMenu(!showServerMenu) : router.push("/settings")}
+            >
+              <ServerIcon size={14} color={hasServer ? Colors.dark.primary : Colors.dark.textTertiary} />
+              <ThemedText style={[dynamicStyles.serverBadgeText, !hasServer && dynamicStyles.serverBadgeTextInactive]}>
+                {currentServer?.name || (hasServer ? "已连接" : "未连接")}
+              </ThemedText>
+              {(hasMultipleServers || !hasServer) && (
+                <ChevronDown size={12} color={Colors.dark.textTertiary} />
+              )}
+            </Pressable>
+          </View>
+          <View style={dynamicStyles.mobileHeaderRight}>
+            <Pressable onPress={onRefresh} style={dynamicStyles.refreshButton}>
+              <RefreshCw size={20} color={Colors.dark.textSecondary} />
+            </Pressable>
+            <Pressable style={dynamicStyles.iconButton} onPress={() => router.push("/search")}>
+              <Search size={20} color={colorScheme === "dark" ? "#F0F2F5" : "#000"} />
+            </Pressable>
+          </View>
+
+          {showServerMenu && hasMultipleServers && (
+            <Animated.View style={dynamicStyles.serverDropdown}>
+              <View style={dynamicStyles.dropdownArrow} />
+              {servers.map((server: Server) => (
+                <Pressable
+                  key={server.id}
+                  style={[
+                    dynamicStyles.dropdownItem,
+                    currentServer?.id === server.id && dynamicStyles.dropdownItemActive,
+                  ]}
+                  onPress={() => handleServerSwitch(server.id)}
+                >
+                  <View style={[
+                    dynamicStyles.dropdownDot,
+                    currentServer?.id === server.id && { backgroundColor: Colors.dark.primary },
+                  ]} />
+                  <ThemedText style={[
+                    dynamicStyles.dropdownItemText,
+                    currentServer?.id === server.id && dynamicStyles.dropdownItemTextActive,
+                  ]}>
+                    {server.name}
+                  </ThemedText>
+                </Pressable>
+              ))}
+              <Pressable
+                style={dynamicStyles.dropdownItem}
+                onPress={() => { setShowServerMenu(false); router.push("/settings"); }}
+              >
+                <ThemedText style={dynamicStyles.dropdownItemAdd}>+ 管理服务器</ThemedText>
+              </Pressable>
+            </Animated.View>
+          )}
+        </Animated.View>
+      );
     }
 
     return (
       <Animated.View style={[dynamicStyles.headerContainer, headerAnim]}>
         <View style={dynamicStyles.logoContainer}>
+          {hasMultipleServers && (
+            <Pressable
+              style={dynamicStyles.tvServerButton}
+              onPress={() => setShowServerMenu(!showServerMenu)}
+            >
+              <ServerIcon size={isTV ? 18 : 16} color={Colors.dark.primary} />
+              <ThemedText style={dynamicStyles.tvServerName}>{currentServer?.name || "服务器"}</ThemedText>
+              <ChevronDown size={14} color={Colors.dark.textSecondary} />
+            </Pressable>
+          )}
           <View style={styles.logoIconContainer}>
             <Tv size={isTV ? 32 : 24} color={Colors.dark.primary} />
           </View>
           <ThemedText style={dynamicStyles.appName}>云影TV</ThemedText>
         </View>
         <View style={dynamicStyles.headerActions}>
-          <Pressable 
-            style={dynamicStyles.liveButton} 
+          <Pressable
+            style={dynamicStyles.liveButton}
             onPress={() => router.push("/live")}
           >
             <View style={dynamicStyles.liveButtonInner}>
@@ -179,21 +279,21 @@ export default React.memo(function HomeScreen() {
           </Pressable>
           <View style={dynamicStyles.rightHeaderButtons}>
             <StyledButton style={dynamicStyles.iconButton} onPress={() => router.push("/favorites")} variant="ghost">
-              <Heart color={colorScheme === "dark" ? "white" : "black"} size={isTV ? 28 : 24} />
+              <Heart color={colorScheme === "dark" ? "#F0F2F5" : "#000"} size={isTV ? 28 : 24} />
             </StyledButton>
             <StyledButton
               style={dynamicStyles.iconButton}
               onPress={() => router.push({ pathname: "/search" })}
               variant="ghost"
             >
-              <Search color={colorScheme === "dark" ? "white" : "black"} size={isTV ? 28 : 24} />
+              <Search color={colorScheme === "dark" ? "#F0F2F5" : "#000"} size={isTV ? 28 : 24} />
             </StyledButton>
             <StyledButton style={dynamicStyles.iconButton} onPress={() => router.push("/settings")} variant="ghost">
-              <Settings color={colorScheme === "dark" ? "white" : "black"} size={isTV ? 28 : 24} />
+              <Settings color={colorScheme === "dark" ? "#F0F2F5" : "#000"} size={isTV ? 28 : 24} />
             </StyledButton>
             {isLoggedIn && (
               <StyledButton style={dynamicStyles.iconButton} onPress={logout} variant="ghost">
-                <LogOut color={colorScheme === "dark" ? "white" : "black"} size={isTV ? 28 : 24} />
+                <LogOut color={colorScheme === "dark" ? "#F0F2F5" : "#000"} size={isTV ? 28 : 24} />
               </StyledButton>
             )}
           </View>
@@ -207,6 +307,130 @@ export default React.memo(function HomeScreen() {
       flex: 1,
       paddingTop: deviceType === "mobile" ? insets.top : deviceType === "tablet" ? insets.top + 20 : 40,
       backgroundColor: Colors.dark.background,
+    },
+    mobileHeader: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
+      paddingHorizontal: spacing,
+      paddingVertical: spacing * 0.6,
+      backgroundColor: Colors.dark.surfaceElevated,
+      borderBottomWidth: 1,
+      borderBottomColor: Colors.dark.border,
+      ...Shadows.dark.sm,
+    },
+    mobileHeaderLeft: {
+      flexDirection: "row",
+      alignItems: "center",
+      flex: 1,
+    },
+    mobileHeaderRight: {
+      flexDirection: "row",
+      alignItems: "center",
+    },
+    serverBadge: {
+      flexDirection: "row",
+      alignItems: "center",
+      backgroundColor: Colors.dark.card,
+      borderRadius: BorderRadius.full,
+      paddingHorizontal: 10,
+      paddingVertical: 5,
+      borderWidth: 1,
+      borderColor: Colors.dark.border,
+    },
+    serverBadgeMulti: {
+      borderColor: Colors.dark.borderStrong,
+    },
+    serverBadgeText: {
+      fontSize: 12,
+      fontWeight: "600",
+      color: Colors.dark.primary,
+      marginHorizontal: 4,
+    },
+    serverBadgeTextInactive: {
+      color: Colors.dark.textTertiary,
+    },
+    refreshButton: {
+      padding: 6,
+      marginRight: 4,
+      borderRadius: BorderRadius.sm,
+    },
+    iconButton: {
+      padding: 6,
+      marginLeft: 4,
+      borderRadius: BorderRadius.sm,
+    },
+    serverDropdown: {
+      position: "absolute",
+      top: "100%",
+      left: spacing,
+      marginTop: 4,
+      backgroundColor: Colors.dark.surfaceElevated,
+      borderRadius: BorderRadius.lg,
+      borderWidth: 1,
+      borderColor: Colors.dark.borderStrong,
+      ...Shadows.dark.lg,
+      zIndex: 100,
+      minWidth: 180,
+      paddingVertical: 4,
+    },
+    dropdownArrow: {
+      position: "absolute",
+      top: -8,
+      left: 20,
+      width: 16,
+      height: 16,
+      backgroundColor: Colors.dark.surfaceElevated,
+      borderTopWidth: 1,
+      borderLeftWidth: 1,
+      borderColor: Colors.dark.borderStrong,
+      transform: [{ rotate: "45deg" }],
+    },
+    dropdownItem: {
+      flexDirection: "row",
+      alignItems: "center",
+      paddingHorizontal: 14,
+      paddingVertical: 11,
+    },
+    dropdownItemActive: {
+      backgroundColor: Colors.dark.focusGlow,
+    },
+    dropdownDot: {
+      width: 7,
+      height: 7,
+      borderRadius: 3.5,
+      backgroundColor: Colors.dark.textTertiary,
+      marginRight: 10,
+    },
+    dropdownItemText: {
+      fontSize: 14,
+      color: Colors.dark.text,
+    },
+    dropdownItemTextActive: {
+      color: Colors.dark.primary,
+      fontWeight: "600",
+    },
+    dropdownItemAdd: {
+      fontSize: 13,
+      color: Colors.dark.primary,
+      fontWeight: "600",
+    },
+    tvServerButton: {
+      flexDirection: "row",
+      alignItems: "center",
+      backgroundColor: Colors.dark.surfaceElevated,
+      borderRadius: BorderRadius.md,
+      paddingHorizontal: 12,
+      paddingVertical: 8,
+      marginRight: 12,
+      borderWidth: 1,
+      borderColor: Colors.dark.border,
+    },
+    tvServerName: {
+      fontSize: 13,
+      fontWeight: "600",
+      color: Colors.dark.text,
+      marginHorizontal: 6,
     },
     headerContainer: {
       flexDirection: "row",
@@ -250,13 +474,13 @@ export default React.memo(function HomeScreen() {
     liveText: {
       fontSize: isTV ? 18 : 15,
       fontWeight: "700",
-      color: "white",
+      color: "#ffffff",
     },
     rightHeaderButtons: {
       flexDirection: "row",
       alignItems: "center",
     },
-    iconButton: {
+    iconButtonTV: {
       borderRadius: 30,
       marginLeft: spacing / 2,
       minWidth: isTV ? 56 : 44,
@@ -271,7 +495,7 @@ export default React.memo(function HomeScreen() {
     categoryButton: {
       paddingHorizontal: isTV ? 24 : deviceType === "mobile" ? 14 : 18,
       paddingVertical: isTV ? 16 : spacing / 2,
-      borderRadius: isTV ? 14 : deviceType === "mobile" ? 8 : 10,
+      borderRadius: isTV ? 14 : deviceType === "mobile" ? BorderRadius.md : 10,
       marginHorizontal: isTV ? 8 : spacing / 2,
       minWidth: isTV ? 110 : 70,
     },
@@ -282,9 +506,34 @@ export default React.memo(function HomeScreen() {
     contentContainer: {
       flex: 1,
     },
+    emptyStateContainer: {
+      flex: 1,
+      justifyContent: "center",
+      alignItems: "center",
+      paddingHorizontal: spacing * 3,
+      paddingBottom: spacing * 4,
+    },
+    emptyStateIcon: {
+      marginBottom: spacing * 2,
+      opacity: 0.6,
+    },
+    emptyStateTitle: {
+      fontSize: 20,
+      fontWeight: "700",
+      color: Colors.dark.text,
+      textAlign: "center",
+      marginBottom: spacing,
+    },
+    emptyStateDesc: {
+      fontSize: 14,
+      color: Colors.dark.textSecondary,
+      textAlign: "center",
+      lineHeight: 22,
+      marginBottom: spacing * 1.5,
+    },
   }), [deviceType, spacing, insets, isTV]);
 
-  const renderCategory = useCallback(({ item, index }: { item: Category; index: number }) => {
+  const renderCategory = useCallback(({ item }: { item: Category }) => {
     const isSelected = selectedCategory?.title === item.title;
     return (
       <StyledButton
@@ -333,30 +582,53 @@ export default React.memo(function HomeScreen() {
     );
   }, [selectedTag, handleTagSelect, dynamicStyles.categoryButton, dynamicStyles.categoryText]);
 
+  const renderEmptyState = () => (
+    <View style={dynamicStyles.emptyStateContainer}>
+      <View style={dynamicStyles.emptyStateIcon}>
+        <ServerIcon size={64} color={Colors.dark.textTertiary} strokeWidth={1.5} />
+      </View>
+      <ThemedText style={dynamicStyles.emptyStateTitle}>欢迎使用云影TV</ThemedText>
+      <ThemedText style={dynamicStyles.emptyStateDesc}>
+        请先添加视频源服务器地址，即可开始浏览精彩内容
+      </ThemedText>
+      <StyledButton
+        text="前往设置"
+        onPress={() => router.push("/settings")}
+        variant="primary"
+        style={{ minWidth: 160 }}
+      />
+    </View>
+  );
+
   const content = (
-    <ThemedView style={[commonStyles.container, dynamicStyles.container]}>
+    <ThemedView
+      style={[commonStyles.container, dynamicStyles.container]}
+      onTouchEnd={handleDoubleTapRefresh}
+    >
       {deviceType === "mobile" && <StatusBar barStyle="light-content" />}
 
       {renderHeader()}
 
-      <FadeIn delay={100} duration={500}>
-        <Animated.View style={[dynamicStyles.categoryContainer, categoryAnim]}>
-          <FlatList
-            data={categories}
-            renderItem={renderCategory}
-            keyExtractor={(item) => item.title}
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={dynamicStyles.categoryListContent}
-            removeClippedSubviews={true}
-            maxToRenderPerBatch={isTV ? 4 : 6}
-            windowSize={isTV ? 4 : 2}
-            initialNumToRender={isTV ? 4 : 3}
-          />
-        </Animated.View>
-      </FadeIn>
+      {hasServer && (
+        <FadeIn delay={100} duration={500}>
+          <Animated.View style={[dynamicStyles.categoryContainer, categoryAnim]}>
+            <FlatList
+              data={categories}
+              renderItem={renderCategory}
+              keyExtractor={(item) => item.title}
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={dynamicStyles.categoryListContent}
+              removeClippedSubviews={true}
+              maxToRenderPerBatch={isTV ? 4 : 6}
+              windowSize={isTV ? 4 : 2}
+              initialNumToRender={isTV ? 4 : 3}
+            />
+          </Animated.View>
+        </FadeIn>
+      )}
 
-      {selectedCategory && selectedCategory.tags && (
+      {hasServer && selectedCategory && selectedCategory.tags && (
         <FadeIn delay={200} duration={500}>
           <Animated.View style={[dynamicStyles.categoryContainer, categoryAnim]}>
             <FlatList
@@ -375,7 +647,9 @@ export default React.memo(function HomeScreen() {
         </FadeIn>
       )}
 
-      {apiConfigStatus.isValidating ? (
+      {!hasServer ? (
+        renderEmptyState()
+      ) : apiConfigStatus.isValidating ? (
         <View style={commonStyles.center}>
           <ActivityIndicator size="large" color={Colors.dark.primary} />
         </View>
@@ -389,6 +663,12 @@ export default React.memo(function HomeScreen() {
           <ThemedText type="subtitle" style={{ padding: spacing }}>
             {error}
           </ThemedText>
+          <StyledButton
+            text="重试"
+            onPress={onRefresh}
+            variant="secondary"
+            style={{ marginTop: spacing }}
+          />
         </View>
       ) : (
         <Animated.View style={[dynamicStyles.contentContainer, contentAnim]}>
@@ -402,6 +682,8 @@ export default React.memo(function HomeScreen() {
             loadMoreThreshold={LOAD_MORE_THRESHOLD}
             emptyMessage={selectedCategory?.tags ? "请选择一个子分类" : "该分类下暂无内容"}
             ListFooterComponent={renderFooter}
+            refreshing={refreshing}
+            onRefresh={onRefresh}
           />
         </Animated.View>
       )}
@@ -420,7 +702,7 @@ const styles = StyleSheet.create({
     width: 48,
     height: 48,
     borderRadius: 12,
-    backgroundColor: "rgba(0, 187, 94, 0.15)",
+    backgroundColor: "rgba(0, 201, 107, 0.15)",
     justifyContent: "center",
     alignItems: "center",
   },
@@ -431,11 +713,11 @@ const styles = StyleSheet.create({
   loadMoreText: {
     marginTop: 12,
     fontSize: 14,
-    color: "#888",
+    color: Colors.dark.textTertiary,
   },
   loadingText: {
     marginTop: 16,
     fontSize: 16,
-    color: "#888",
+    color: Colors.dark.textSecondary,
   },
 });
