@@ -5,7 +5,7 @@ exports[`renders correctly 1`] = `
   style={
     [
       {
-        "color": "#ECEDEE",
+        "color": "#F0F2F5",
       },
       {
         "fontSize": 16,

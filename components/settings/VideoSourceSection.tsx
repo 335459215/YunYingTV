@@ -6,6 +6,7 @@ import { useSettingsStore } from "@/stores/settingsStore";
 import useSourceStore, { useSources } from "@/stores/sourceStore";
 import type { TVKeyEvent } from "@/types/common";
 import { useTVEventHandler } from "@/hooks/useTVRemoteHandler";
+import { Colors, BorderRadius } from "@/constants/Colors";
 
 interface VideoSourceSectionProps {
   onChanged: () => void;
@@ -129,14 +130,14 @@ const styles = StyleSheet.create({
     justifyContent: "flex-start",
     paddingVertical: 12,
     paddingHorizontal: 16,
-    backgroundColor: "#2a2a2a",
-    borderRadius: 8,
+    backgroundColor: Colors.dark.surfaceElevated,
+    borderRadius: BorderRadius.md,
     minHeight: 56,
   },
   resourceFocused: {
-    backgroundColor: "#3a3a3c",
-    borderWidth: 2,
-    borderColor: "#007AFF",
+    backgroundColor: Colors.dark.cardHover,
+    borderWidth: 1.5,
+    borderColor: Colors.dark.borderFocus,
     shadowColor: "#007AFF",
     shadowOffset: { width: 0, height: 0 },
     shadowOpacity: 0.8,

@@ -5,7 +5,7 @@ import { Star, Play } from "lucide-react-native";
 import { PlayRecordManager } from "@/services/storage";
 import { API } from "@/services/api";
 import { ThemedText } from "@/components/ThemedText";
-import { Colors } from "@/constants/Colors";
+import { Colors, Shadows, BorderRadius } from "@/constants/Colors";
 import { useResponsiveLayout } from "@/hooks/useResponsiveLayout";
 import Logger from '@/utils/Logger';
 import { useStaggeredFadeIn } from "@/hooks/useAnimation";
@@ -232,19 +232,14 @@ const createMobileStyles = (cardWidth: number, cardHeight: number, spacing: numb
     card: {
       width: cardWidth,
       height: cardHeight,
-      borderRadius: 12,
-      backgroundColor: "#1a1a1a",
+      borderRadius: BorderRadius.md,
+      backgroundColor: Colors.dark.card,
       overflow: "hidden",
-      shadowColor: "#000",
-      shadowOffset: { width: 0, height: 3 },
-      shadowOpacity: 0.3,
-      shadowRadius: 5,
-      elevation: 6,
+      ...Shadows.dark.sm,
     },
     cardPressed: {
+      ...Shadows.dark.md,
       shadowColor: Colors.dark.primary,
-      shadowOpacity: 0.4,
-      shadowRadius: 8,
       elevation: 8,
     },
     poster: {
@@ -254,26 +249,23 @@ const createMobileStyles = (cardWidth: number, cardHeight: number, spacing: numb
     },
     gradientOverlay: {
       ...StyleSheet.absoluteFillObject,
-      backgroundColor: "rgba(0,0,0,0.05)",
+      backgroundColor: "rgba(0,0,0,0.04)",
     },
     pressOverlay: {
       ...StyleSheet.absoluteFillObject,
-      backgroundColor: "rgba(0,0,0,0.5)",
+      backgroundColor: "rgba(0,0,0,0.45)",
       justifyContent: "center",
       alignItems: "center",
-      borderRadius: 12,
+      borderRadius: BorderRadius.md,
     },
     playButton: {
       width: 48,
       height: 48,
       borderRadius: 24,
-      backgroundColor: "rgba(0, 187, 94, 0.9)",
+      backgroundColor: Colors.dark.primary,
       justifyContent: "center",
       alignItems: "center",
-      shadowColor: "#000",
-      shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: 0.3,
-      shadowRadius: 4,
+      ...Shadows.dark.sm,
       elevation: 6,
     },
     progressContainer: {
@@ -282,9 +274,9 @@ const createMobileStyles = (cardWidth: number, cardHeight: number, spacing: numb
       left: 0,
       right: 0,
       height: 4,
-      backgroundColor: "rgba(0, 0, 0, 0.7)",
-      borderBottomLeftRadius: 12,
-      borderBottomRightRadius: 12,
+      backgroundColor: "rgba(10, 11, 13, 0.7)",
+      borderBottomLeftRadius: BorderRadius.md,
+      borderBottomRightRadius: BorderRadius.md,
       overflow: "hidden",
     },
     progressBar: {
@@ -297,13 +289,13 @@ const createMobileStyles = (cardWidth: number, cardHeight: number, spacing: numb
       backgroundColor: Colors.dark.primary,
       paddingHorizontal: 10,
       paddingVertical: 5,
-      borderRadius: 8,
+      borderRadius: BorderRadius.sm,
     },
     continueWatchingText: {
-      color: "white",
+      color: "#ffffff",
       marginLeft: 4,
       fontSize: 12,
-      fontWeight: "bold",
+      fontWeight: "700",
     },
     continueWatchingIndicator: {
       position: 'absolute',
@@ -317,10 +309,10 @@ const createMobileStyles = (cardWidth: number, cardHeight: number, spacing: numb
       borderRadius: 6,
     },
     continueWatchingIndicatorText: {
-      color: "white",
+      color: "#ffffff",
       marginLeft: 3,
       fontSize: 10,
-      fontWeight: "bold",
+      fontWeight: "700",
     },
     ratingContainer: {
       position: "absolute",
@@ -328,22 +320,22 @@ const createMobileStyles = (cardWidth: number, cardHeight: number, spacing: numb
       right: 8,
       flexDirection: "row",
       alignItems: "center",
-      backgroundColor: "rgba(0, 0, 0, 0.85)",
-      borderRadius: 8,
+      backgroundColor: "rgba(10, 11, 13, 0.88)",
+      borderRadius: 6,
       paddingHorizontal: 6,
       paddingVertical: 3,
     },
     ratingText: {
       color: "#FFD700",
       fontSize: 11,
-      fontWeight: "bold",
+      fontWeight: "700",
       marginLeft: 3,
     },
     yearBadge: {
       position: "absolute",
       bottom: 10,
       right: 8,
-      backgroundColor: "rgba(0, 0, 0, 0.85)",
+      backgroundColor: "rgba(10, 11, 13, 0.88)",
       borderRadius: 6,
       paddingHorizontal: 6,
       paddingVertical: 3,
@@ -352,13 +344,13 @@ const createMobileStyles = (cardWidth: number, cardHeight: number, spacing: numb
       position: "absolute",
       bottom: 10,
       left: 8,
-      backgroundColor: "rgba(0, 187, 94, 0.9)",
+      backgroundColor: Colors.dark.primary,
       borderRadius: 6,
       paddingHorizontal: 6,
       paddingVertical: 3,
     },
     badgeText: {
-      color: "white",
+      color: "#ffffff",
       fontSize: 10,
       fontWeight: "700",
     },

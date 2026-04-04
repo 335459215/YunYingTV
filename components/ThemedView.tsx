@@ -5,7 +5,7 @@ import {useThemeColor} from '@/hooks/useThemeColor';
 export type ThemedViewProps = ViewProps & {
   lightColor?: string;
   darkColor?: string;
-  variant?: 'background' | 'surface' | 'card';
+  variant?: 'background' | 'surface' | 'surfaceElevated' | 'card' | 'cardElevated';
 };
 
 export function ThemedView({

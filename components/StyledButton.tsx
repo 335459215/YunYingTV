@@ -1,7 +1,7 @@
 import React, { forwardRef } from "react";
 import { Animated, Pressable, StyleSheet, StyleProp, ViewStyle, PressableProps, TextStyle, View } from "react-native";
 import { ThemedText } from "./ThemedText";
-import { Colors } from "@/constants/Colors";
+import { Colors, Shadows, BorderRadius } from "@/constants/Colors";
 import { useButtonAnimation } from "@/hooks/useAnimation";
 import { useResponsiveLayout } from "@/hooks/useResponsiveLayout";
 import { useThemeColor } from "@/hooks/useThemeColor";
@@ -23,14 +23,12 @@ export const StyledButton = React.memo(forwardRef<View, StyledButtonProps>(
     const animationStyle = useButtonAnimation(isFocused);
     const { deviceType } = useResponsiveLayout();
     const textStyles = useTextStyles();
-    
-    const borderColor = useThemeColor({}, "border");
+
     const textColor = useThemeColor({}, "text");
     const primaryColor = useThemeColor({}, "primary");
-    const backgroundColor = useThemeColor({}, "background");
-    const linkColor = useThemeColor({}, "link");
     const tintColor = useThemeColor({}, "primary");
     const errorColor = useThemeColor({}, "error");
+    const ghostBg = useThemeColor({}, "buttonGhost");
 
     const isTV = deviceType === "tv";
 
@@ -55,7 +53,8 @@ export const StyledButton = React.memo(forwardRef<View, StyledButtonProps>(
     const variantStyles = {
       default: {
         button: {
-          backgroundColor: borderColor,
+          backgroundColor: Colors.dark.surfaceElevated,
+          borderColor: Colors.dark.borderStrong,
         },
         text: {
           color: textColor,
@@ -64,58 +63,62 @@ export const StyledButton = React.memo(forwardRef<View, StyledButtonProps>(
           backgroundColor: primaryColor,
         },
         focusedButton: {
-          borderColor: primaryColor,
-          backgroundColor: "rgba(74, 158, 255, 0.15)",
+          borderColor: Colors.dark.borderFocus,
+          backgroundColor: Colors.dark.focusGlow,
         },
         selectedText: {
-          color: Colors.dark.text,
+          color: "#ffffff",
         },
       },
       primary: {
         button: {
           backgroundColor: "transparent",
+          borderColor: "transparent",
         },
         text: {
           color: textColor,
         },
         focusedButton: {
           backgroundColor: primaryColor,
-          borderColor: backgroundColor,
+          borderColor: primaryColor,
+          ...Shadows.dark.focus,
         },
         selectedButton: {
           backgroundColor: primaryColor,
         },
         selectedText: {
-          color: linkColor,
+          color: "#ffffff",
         },
       },
       ghost: {
         button: {
           backgroundColor: "transparent",
+          borderColor: "transparent",
         },
         text: {
           color: textColor,
         },
         focusedButton: {
-          backgroundColor: "rgba(74, 158, 255, 0.2)",
-          borderColor: primaryColor,
+          backgroundColor: Colors.dark.focusGlow,
+          borderColor: Colors.dark.borderFocus,
         },
         selectedButton: {},
         selectedText: {},
       },
       secondary: {
         button: {
-          backgroundColor: "rgba(119, 119, 119, 0.3)",
+          backgroundColor: ghostBg,
+          borderColor: Colors.dark.border,
         },
         text: {
           color: textColor,
         },
         focusedButton: {
-          backgroundColor: "rgba(119, 119, 119, 0.5)",
-          borderColor: primaryColor,
+          backgroundColor: Colors.dark.pressedOverlay,
+          borderColor: Colors.dark.borderFocus,
         },
         selectedButton: {
-          backgroundColor: "rgba(119, 119, 119, 0.5)",
+          backgroundColor: Colors.dark.pressedOverlay,
         },
         selectedText: {
           color: textColor,
@@ -123,17 +126,18 @@ export const StyledButton = React.memo(forwardRef<View, StyledButtonProps>(
       },
       danger: {
         button: {
-          backgroundColor: "rgba(220, 53, 69, 0.2)",
+          backgroundColor: "rgba(239, 68, 68, 0.15)",
+          borderColor: "rgba(239, 68, 68, 0.20)",
         },
         text: {
           color: errorColor,
         },
         focusedButton: {
-          backgroundColor: "rgba(220, 53, 69, 0.3)",
+          backgroundColor: "rgba(239, 68, 68, 0.25)",
           borderColor: errorColor,
         },
         selectedButton: {
-          backgroundColor: "rgba(220, 53, 69, 0.3)",
+          backgroundColor: "rgba(239, 68, 68, 0.25)",
         },
         selectedText: {
           color: errorColor,
@@ -145,8 +149,8 @@ export const StyledButton = React.memo(forwardRef<View, StyledButtonProps>(
       button: {
         paddingHorizontal: sizeStyles[size].paddingHorizontal,
         paddingVertical: sizeStyles[size].paddingVertical,
-        borderRadius: isTV ? 12 : 8,
-        borderWidth: isTV ? 3 : 2,
+        borderRadius: isTV ? BorderRadius.lg : BorderRadius.md,
+        borderWidth: isTV ? 1.5 : 1,
         borderColor: "transparent",
         flexDirection: "row",
         alignItems: "center",
@@ -155,13 +159,9 @@ export const StyledButton = React.memo(forwardRef<View, StyledButtonProps>(
         minHeight: isTV ? 56 : 44,
       },
       focusedButton: {
-        backgroundColor: "rgba(74, 158, 255, 0.2)",
-        borderColor: primaryColor,
-        elevation: 8,
-        shadowColor: primaryColor,
-        shadowOffset: { width: 0, height: 0 },
-        shadowOpacity: isTV ? 0.8 : 0.5,
-        shadowRadius: isTV ? 20 : 15,
+        backgroundColor: Colors.dark.focusGlow,
+        borderColor: Colors.dark.borderFocus,
+        ...Shadows.dark.focus,
       },
       selectedButton: {
         backgroundColor: tintColor,
@@ -172,11 +172,13 @@ export const StyledButton = React.memo(forwardRef<View, StyledButtonProps>(
         color: textColor,
       },
       selectedText: {
-        color: Colors.dark.text,
+        color: "#ffffff",
       },
     });
 
-    const androidRippleColor = isTV ? "rgba(74, 158, 255, 0.3)" : "rgba(255, 255, 255, 0.3)";
+    const androidRippleColor = isTV
+      ? "rgba(0, 201, 107, 0.20)"
+      : "rgba(255, 255, 255, 0.08)";
 
     return (
       <Animated.View style={[animationStyle, style]}>
@@ -191,7 +193,7 @@ export const StyledButton = React.memo(forwardRef<View, StyledButtonProps>(
             isSelected && variantStyles[variant].selectedButton,
             isFocused && (variantStyles[variant].focusedButton || styles.focusedButton),
             pressed && {
-              opacity: 0.8,
+              opacity: 0.85,
               transform: [{ scale: 0.98 }],
             },
           ]}
@@ -203,7 +205,7 @@ export const StyledButton = React.memo(forwardRef<View, StyledButtonProps>(
                 styles.text,
                 variantStyles[variant].text,
                 isSelected && variantStyles[variant].selectedText,
-                isFocused && { color: Colors.dark.text },
+                isFocused && { color: "#ffffff" },
                 textStyle,
               ]}
             >

@@ -5,7 +5,7 @@ import { Star, Play } from "lucide-react-native";
 import { PlayRecordManager } from "@/services/storage";
 import { API } from "@/services/api";
 import { ThemedText } from "@/components/ThemedText";
-import { Colors } from "@/constants/Colors";
+import { Colors, Shadows, BorderRadius } from "@/constants/Colors";
 import { useResponsiveLayout } from "@/hooks/useResponsiveLayout";
 import Logger from '@/utils/Logger';
 import { useStaggeredFadeIn } from "@/hooks/useAnimation";
@@ -235,19 +235,14 @@ const createTabletStyles = (cardWidth: number, cardHeight: number, spacing: numb
     card: {
       width: cardWidth,
       height: cardHeight,
-      borderRadius: 14,
-      backgroundColor: "#1a1a1a",
+      borderRadius: BorderRadius.lg,
+      backgroundColor: Colors.dark.card,
       overflow: "hidden",
-      shadowColor: "#000",
-      shadowOffset: { width: 0, height: 4 },
-      shadowOpacity: 0.3,
-      shadowRadius: 6,
-      elevation: 8,
+      ...Shadows.dark.sm,
     },
     cardPressed: {
+      ...Shadows.dark.md,
       shadowColor: Colors.dark.primary,
-      shadowOpacity: 0.4,
-      shadowRadius: 10,
       elevation: 10,
     },
     poster: {
@@ -257,26 +252,23 @@ const createTabletStyles = (cardWidth: number, cardHeight: number, spacing: numb
     },
     gradientOverlay: {
       ...StyleSheet.absoluteFillObject,
-      backgroundColor: "rgba(0,0,0,0.05)",
+      backgroundColor: "rgba(0,0,0,0.04)",
     },
     pressOverlay: {
       ...StyleSheet.absoluteFillObject,
       backgroundColor: "rgba(0,0,0,0.45)",
       justifyContent: "center",
       alignItems: "center",
-      borderRadius: 14,
+      borderRadius: BorderRadius.lg,
     },
     playButton: {
       width: 56,
       height: 56,
       borderRadius: 28,
-      backgroundColor: "rgba(0, 187, 94, 0.9)",
+      backgroundColor: Colors.dark.primary,
       justifyContent: "center",
       alignItems: "center",
-      shadowColor: "#000",
-      shadowOffset: { width: 0, height: 3 },
-      shadowOpacity: 0.3,
-      shadowRadius: 6,
+      ...Shadows.dark.sm,
       elevation: 8,
     },
     progressContainer: {
@@ -285,9 +277,9 @@ const createTabletStyles = (cardWidth: number, cardHeight: number, spacing: numb
       left: 0,
       right: 0,
       height: 5,
-      backgroundColor: "rgba(0, 0, 0, 0.75)",
-      borderBottomLeftRadius: 14,
-      borderBottomRightRadius: 14,
+      backgroundColor: "rgba(10, 11, 13, 0.75)",
+      borderBottomLeftRadius: BorderRadius.lg,
+      borderBottomRightRadius: BorderRadius.lg,
       overflow: "hidden",
     },
     progressBar: {
@@ -300,13 +292,13 @@ const createTabletStyles = (cardWidth: number, cardHeight: number, spacing: numb
       backgroundColor: Colors.dark.primary,
       paddingHorizontal: 14,
       paddingVertical: 7,
-      borderRadius: 10,
+      borderRadius: BorderRadius.md,
     },
     continueWatchingText: {
-      color: "white",
+      color: "#ffffff",
       marginLeft: 6,
       fontSize: 14,
-      fontWeight: "bold",
+      fontWeight: "700",
     },
     continueWatchingIndicator: {
       position: 'absolute',
@@ -317,13 +309,13 @@ const createTabletStyles = (cardWidth: number, cardHeight: number, spacing: numb
       backgroundColor: Colors.dark.primary,
       paddingHorizontal: 8,
       paddingVertical: 4,
-      borderRadius: 8,
+      borderRadius: BorderRadius.sm,
     },
     continueWatchingIndicatorText: {
-      color: "white",
+      color: "#ffffff",
       marginLeft: 4,
       fontSize: 11,
-      fontWeight: "bold",
+      fontWeight: "700",
     },
     ratingContainer: {
       position: "absolute",
@@ -331,23 +323,23 @@ const createTabletStyles = (cardWidth: number, cardHeight: number, spacing: numb
       right: 10,
       flexDirection: "row",
       alignItems: "center",
-      backgroundColor: "rgba(0, 0, 0, 0.85)",
-      borderRadius: 10,
+      backgroundColor: "rgba(10, 11, 13, 0.88)",
+      borderRadius: BorderRadius.sm,
       paddingHorizontal: 8,
       paddingVertical: 4,
     },
     ratingText: {
       color: "#FFD700",
       fontSize: 12,
-      fontWeight: "bold",
+      fontWeight: "700",
       marginLeft: 4,
     },
     yearBadge: {
       position: "absolute",
       bottom: 12,
       right: 10,
-      backgroundColor: "rgba(0, 0, 0, 0.85)",
-      borderRadius: 8,
+      backgroundColor: "rgba(10, 11, 13, 0.88)",
+      borderRadius: BorderRadius.sm,
       paddingHorizontal: 8,
       paddingVertical: 4,
     },
@@ -355,13 +347,13 @@ const createTabletStyles = (cardWidth: number, cardHeight: number, spacing: numb
       position: "absolute",
       bottom: 12,
       left: 10,
-      backgroundColor: "rgba(0, 187, 94, 0.9)",
-      borderRadius: 8,
+      backgroundColor: Colors.dark.primary,
+      borderRadius: BorderRadius.sm,
       paddingHorizontal: 8,
       paddingVertical: 4,
     },
     badgeText: {
-      color: "white",
+      color: "#ffffff",
       fontSize: 11,
       fontWeight: "700",
     },

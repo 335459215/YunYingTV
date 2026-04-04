@@ -1,180 +1,303 @@
 /**
- * Design system colors for the app
- * This file defines the color palette for both light and dark modes
+ * Design system colors for YunYingTV
+ * Optimized based on best practices from:
+ * - Linear.app (dark-native surfaces, indigo-violet accents, luminance stacking)
+ * - Raycast (blue-tinted near-black backgrounds, multi-layer shadows)
+ * - Apple (single accent philosophy, cinematic pacing)
+ * - Notion (warm neutrals, ultra-thin borders, sub-0.05 opacity shadows)
+ * - Airbnb (three-layer card shadows, generous border-radius)
+ * - Expo (monochromatic palette, pill-shaped geometry)
  */
 
-// Primary colors
-const primaryLight = "#00bb5e";
-const primaryDark = "#00bb5e";
+// ─── Primary Accent ───
+// Single accent color philosophy (Apple/Linear pattern)
+// Green primary optimized for TV visibility and video streaming context
+const primaryLight = "#00C96B";
+const primaryDark = "#00C96B";
+const primaryHoverDark = "#00E077";
 
-// Secondary colors
-const secondaryLight = "#0a7ea4";
-const secondaryDark = "#0a7ea4";
+// ─── Secondary & Tertiary ───
+const secondaryLight = "#0D9EDF";
+const secondaryDark = "#0D9EDF";
+const tertiaryLight = "#FF6B6B";
+const tertiaryDark = "#FF6B6B";
 
-// Tertiary colors
-const tertiaryLight = "#ff6b6b";
-const tertiaryDark = "#ff6b6b";
+// ─── Backgrounds (Luminance Stacking - Linear/Raycast pattern) ───
+// Blue-tinted near-black for cinematic immersion (video app optimal)
+const backgroundLight = "#FAFBFC";
+const backgroundDark = "#0A0B0D";
 
-// Background colors
-const backgroundLight = "#fff";
-const backgroundDark = "#151718";
-const surfaceLight = "#f8f9fa";
-const surfaceDark = "#1c1c1e";
+// Surface elevation levels (increasing brightness = higher elevation)
+const surfaceLight = "#F0F1F3";
+const surfaceDark = "#111214";
+const surfaceElevatedLight = "#E8E9EB";
+const surfaceElevatedDark = "#18191C";
+const surfaceOverlayLight = "rgba(0, 0, 0, 0.04)";
+const surfaceOverlayDark = "rgba(255, 255, 255, 0.04)";
 
-// Text colors
-const textPrimaryLight = "#11181C";
-const textPrimaryDark = "#ECEDEE";
-const textSecondaryLight = "#687076";
-const textSecondaryDark = "#9BA1A6";
-const textDisabledLight = "#999";
-const textDisabledDark = "#666";
+// ─── Text Colors (Reduced eye strain - Linear/Apple pattern) ───
+// Near-white instead of pure white for long viewing sessions
+const textPrimaryLight = "#0D1117";
+const textPrimaryDark = "#F0F2F5";
+const textSecondaryLight = "#6B7280";
+const textSecondaryDark = "#8B919A";
+const textTertiaryLight = "#9CA3AF";
+const textTertiaryDark = "#5C6270";
+const textDisabledLight = "#BDBDBD";
+const textDisabledDark = "#4A4E56";
 
-// Border colors
-const borderLight = "#E5E5E5";
-const borderDark = "#333";
-const borderLightHover = "#ddd";
-const borderDarkHover = "#444";
+// ─── Borders (Semi-transparent - Linear/Raycast/Notion pattern) ───
+// Ultra-thin semi-transparent borders instead of solid opaque
+const borderLight = "rgba(0, 0, 0, 0.10)";
+const borderDark = "rgba(255, 255, 255, 0.08)";
+const borderStrongLight = "rgba(0, 0, 0, 0.16)";
+const borderStrongDark = "rgba(255, 255, 255, 0.14)";
+const borderFocusDark = "rgba(0, 201, 107, 0.50)";
 
-// Status colors
-const successLight = "#28a745";
-const successDark = "#28a745";
-const warningLight = "#ffc107";
-const warningDark = "#ffc107";
-const errorLight = "#dc3545";
-const errorDark = "#dc3545";
-const infoLight = "#17a2b8";
-const infoDark = "#17a2b8";
+// ─── Status Colors ───
+const successLight = "#22C55E";
+const successDark = "#22C55E";
+const warningLight = "#F59E0B";
+const warningDark = "#F59E0B";
+const errorLight = "#EF4444";
+const errorDark = "#EF4444";
+const infoLight = "#3B82F6";
+const infoDark = "#3B82F6";
 
-// Tab colors
-const tabIconDefaultLight = "#687076";
-const tabIconDefaultDark = "#9BA1A6";
+// ─── Tab Colors ───
+const tabIconDefaultLight = "#6B7280";
+const tabIconDefaultDark = "#5C6270";
 const tabIconSelectedLight = primaryLight;
 const tabIconSelectedDark = primaryDark;
 
-// Card colors
-const cardLight = "#fff";
-const cardDark = "#252525";
-const cardHoverLight = "#f5f5f5";
-const cardHoverDark = "#2a2a2a";
+// ─── Card System (Surface Hierarchy + Shadow Layers - Airbnb/Notion pattern) ───
+const cardLight = "#FFFFFF";
+const cardDark = "#15161A";
+const cardElevatedLight = "#FFFFFF";
+const cardElevatedDark = "#1C1D21";
+const cardHoverLight = "#F8F9FA";
+const cardHoverDark = "#1A1B1F";
 
-// Button colors
+// ─── Button Colors ───
 const buttonPrimaryLight = primaryLight;
 const buttonPrimaryDark = primaryDark;
 const buttonSecondaryLight = secondaryLight;
 const buttonSecondaryDark = secondaryDark;
-const buttonDisabledLight = "#ccc";
-const buttonDisabledDark = "#555";
+const buttonGhostLight = "rgba(0, 0, 0, 0.06)";
+const buttonGhostDark = "rgba(255, 255, 255, 0.06)";
+const buttonDisabledLight = "#D1D5DB";
+const buttonDisabledDark = "#333840";
 
-// Input colors
-const inputBackgroundLight = "#f8f9fa";
-const inputBackgroundDark = "#2a2a2a";
+// ─── Input Colors ───
+const inputBackgroundLight = "#F3F4F6";
+const inputBackgroundDark = "#18191C";
 const inputBorderLight = borderLight;
 const inputBorderDark = borderDark;
 const inputBorderFocusedLight = primaryLight;
 const inputBorderFocusedDark = primaryDark;
 
+// ─── Focus & Interaction States (TV Remote Critical) ───
+// Focus ring for TV remote navigation (Apple/Linear pattern)
+const focusRingColor = "#00C96B";
+const focusRingGlow = "rgba(0, 201, 107, 0.20)";
+const pressedOverlayDark = "rgba(255, 255, 255, 0.06)";
+
+// ─── Shadow Definitions (Multi-layer - Airbnb 3-layer + Notion pattern) ───
+export const Shadows = {
+  light: {
+    sm: {
+      shadowColor: "#000",
+      shadowOffset: { width: 0, height: 1 },
+      shadowOpacity: 0.05,
+      shadowRadius: 2,
+      elevation: 1,
+    },
+    md: {
+      shadowColor: "#000",
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.08,
+      shadowRadius: 12,
+      elevation: 4,
+    },
+    lg: {
+      shadowColor: "#000",
+      shadowOffset: { width: 0, height: 8 },
+      shadowOpacity: 0.12,
+      shadowRadius: 24,
+      elevation: 8,
+    },
+    xl: {
+      shadowColor: "#000",
+      shadowOffset: { width: 0, height: 16 },
+      shadowOpacity: 0.16,
+      shadowRadius: 32,
+      elevation: 12,
+    },
+    focus: {
+      shadowColor: focusRingColor,
+      shadowOffset: { width: 0, height: 0 },
+      shadowOpacity: 0.40,
+      shadowRadius: 16,
+      elevation: 10,
+    },
+  },
+  dark: {
+    sm: {
+      shadowColor: "#000",
+      shadowOffset: { width: 0, height: 1 },
+      shadowOpacity: 0.20,
+      shadowRadius: 3,
+      elevation: 1,
+    },
+    md: {
+      shadowColor: "#000",
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.30,
+      shadowRadius: 12,
+      elevation: 4,
+    },
+    lg: {
+      shadowColor: "#000",
+      shadowOffset: { width: 0, height: 8 },
+      shadowOpacity: 0.40,
+      shadowRadius: 24,
+      elevation: 8,
+    },
+    xl: {
+      shadowColor: "#000",
+      shadowOffset: { width: 0, height: 16 },
+      shadowOpacity: 0.50,
+      shadowRadius: 40,
+      elevation: 12,
+    },
+    focus: {
+      shadowColor: focusRingColor,
+      shadowOffset: { width: 0, height: 0 },
+      shadowOpacity: 0.50,
+      shadowRadius: 20,
+      elevation: 12,
+    },
+  },
+};
+
+// ─── Border Radius (Generous - Airbnb/Expo pattern) ───
+export const BorderRadius = {
+  sm: 8,
+  md: 12,
+  lg: 16,
+  xl: 20,
+  "2xl": 24,
+  full: 9999,
+};
+
 export const Colors = {
   light: {
-    // Primary colors
     primary: primaryLight,
     secondary: secondaryLight,
     tertiary: tertiaryLight,
-    
-    // Background colors
+
     background: backgroundLight,
     surface: surfaceLight,
-    
-    // Text colors
+    surfaceElevated: surfaceElevatedLight,
+    surfaceOverlay: surfaceOverlayLight,
+
     text: textPrimaryLight,
     textSecondary: textSecondaryLight,
+    textTertiary: textTertiaryLight,
     textDisabled: textDisabledLight,
-    
-    // Border colors
+
     border: borderLight,
-    borderHover: borderLightHover,
-    
-    // Status colors
+    borderStrong: borderStrongLight,
+
     success: successLight,
     warning: warningLight,
     error: errorLight,
     info: infoLight,
-    
-    // Tab colors
+
     tabIconDefault: tabIconDefaultLight,
     tabIconSelected: tabIconSelectedLight,
-    
-    // Card colors
+
     card: cardLight,
+    cardElevated: cardElevatedLight,
     cardHover: cardHoverLight,
-    
-    // Button colors
+
     buttonPrimary: buttonPrimaryLight,
     buttonSecondary: buttonSecondaryLight,
+    buttonGhost: buttonGhostLight,
     buttonDisabled: buttonDisabledLight,
-    
-    // Input colors
+
     inputBackground: inputBackgroundLight,
     inputBorder: inputBorderLight,
     inputBorderFocused: inputBorderFocusedLight,
-    
-    // Link color
+
     link: secondaryLight,
+
+    focusRing: focusRingColor,
+    focusGlow: "rgba(0, 201, 107, 0.15)",
+    pressedOverlay: "rgba(0, 0, 0, 0.04)",
   },
   dark: {
-    // Primary colors
     primary: primaryDark,
+    primaryHover: primaryHoverDark,
     secondary: secondaryDark,
     tertiary: tertiaryDark,
-    
-    // Background colors
+
     background: backgroundDark,
     surface: surfaceDark,
-    
-    // Text colors
+    surfaceElevated: surfaceElevatedDark,
+    surfaceOverlay: surfaceOverlayDark,
+
     text: textPrimaryDark,
     textSecondary: textSecondaryDark,
+    textTertiary: textTertiaryDark,
     textDisabled: textDisabledDark,
-    
-    // Border colors
+
     border: borderDark,
-    borderHover: borderDarkHover,
-    
-    // Status colors
+    borderStrong: borderStrongDark,
+    borderFocus: borderFocusDark,
+
     success: successDark,
     warning: warningDark,
     error: errorDark,
     info: infoDark,
-    
-    // Tab colors
+
     tabIconDefault: tabIconDefaultDark,
     tabIconSelected: tabIconSelectedDark,
-    
-    // Card colors
+
     card: cardDark,
+    cardElevated: cardElevatedDark,
     cardHover: cardHoverDark,
-    
-    // Button colors
+
     buttonPrimary: buttonPrimaryDark,
     buttonSecondary: buttonSecondaryDark,
+    buttonGhost: buttonGhostDark,
     buttonDisabled: buttonDisabledDark,
-    
-    // Input colors
+
     inputBackground: inputBackgroundDark,
     inputBorder: inputBorderDark,
     inputBorderFocused: inputBorderFocusedDark,
-    
-    // Link color
+
     link: secondaryDark,
+
+    focusRing: focusRingColor,
+    focusGlow: focusRingGlow,
+    pressedOverlay: pressedOverlayDark,
   },
 };
 
-// Common color utilities
-export const getColor = (colorName: keyof typeof Colors.dark, mode: 'light' | 'dark' = 'dark') => {
-  return Colors[mode][colorName];
+export const getColor = (
+  colorName: keyof typeof Colors.dark,
+  mode: "light" | "dark" = "dark"
+) => {
+  const colorMap = Colors[mode];
+  if (colorName in colorMap) {
+    return (colorMap as Record<string, string>)[colorName];
+  }
+  return Colors.dark.text;
 };
 
-// Theme-aware color utilities
-export const useThemeColor = (colorName: keyof typeof Colors.dark) => {
-  // This will be replaced with a proper theme hook
+export const useThemeColor = (
+  colorName: keyof typeof Colors.dark
+) => {
   return Colors.dark[colorName];
 };
