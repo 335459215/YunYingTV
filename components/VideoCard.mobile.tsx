@@ -1,4 +1,4 @@
-import React, { useState, useRef, forwardRef } from "react";
+import React, { useState, useRef, forwardRef, useMemo } from "react";
 import { View, Image, StyleSheet, TouchableOpacity, Alert, Animated } from "react-native";
 import { useRouter } from "expo-router";
 import { Star, Play } from "lucide-react-native";
@@ -30,7 +30,7 @@ interface VideoCardMobileProps extends React.ComponentProps<typeof TouchableOpac
   index?: number;
 }
 
-const VideoCardMobile = forwardRef<View, VideoCardMobileProps>(
+const VideoCardMobile = React.memo(forwardRef<View, VideoCardMobileProps>(
   (
     {
       id,
@@ -131,7 +131,7 @@ const VideoCardMobile = forwardRef<View, VideoCardMobileProps>(
       transform: [{ scale: scaleAnim }],
     };
 
-    const styles = createMobileStyles(cardWidth, cardHeight, spacing);
+    const styles = useMemo(() => createMobileStyles(cardWidth, cardHeight, spacing), [cardWidth, cardHeight, spacing]);
 
     return (
       <Animated.View style={[styles.wrapper, fadeInAnim, animatedStyle]} ref={ref}>
@@ -216,7 +216,7 @@ const VideoCardMobile = forwardRef<View, VideoCardMobileProps>(
       </Animated.View>
     );
   }
-);
+));
 
 VideoCardMobile.displayName = "VideoCardMobile";
 

@@ -29,7 +29,7 @@ interface VideoCardProps extends React.ComponentProps<typeof TouchableOpacity> {
   api: API;
 }
 
-const ResponsiveVideoCard = forwardRef<View, VideoCardProps>(
+const ResponsiveVideoCard = React.memo(forwardRef<View, VideoCardProps>(
   (
     {
       id,
@@ -294,7 +294,7 @@ const ResponsiveVideoCard = forwardRef<View, VideoCardProps>(
       </Animated.View>
     );
   }
-);
+));
 
 ResponsiveVideoCard.displayName = "ResponsiveVideoCard";
 

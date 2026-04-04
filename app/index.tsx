@@ -22,7 +22,7 @@ import { FadeIn, ListItemAnimation } from "@/components/AnimationEnhanced";
 
 const LOAD_MORE_THRESHOLD = 200;
 
-export default function HomeScreen() {
+export default React.memo(function HomeScreen() {
   const router = useRouter();
   const colorScheme = "dark";
   const [selectedTag, setSelectedTag] = useState<string | null>(null);
@@ -126,9 +126,9 @@ export default function HomeScreen() {
     selectCategory(category);
   }, 300);
 
-  const handleCategorySelect = (category: Category) => {
+  const handleCategorySelect = useCallback((category: Category) => {
     throttledCategorySelect(category);
-  };
+  }, [throttledCategorySelect]);
 
   // 使用节流优化标签选择
   const throttledTagSelect = useThrottle((tag: string) => {
@@ -139,43 +139,9 @@ export default function HomeScreen() {
     }
   }, 300);
 
-  const handleTagSelect = (tag: string) => {
+  const handleTagSelect = useCallback((tag: string) => {
     throttledTagSelect(tag);
-  };
-
-  const renderCategory = ({ item, index }: { item: Category; index: number }) => {
-    const isSelected = selectedCategory?.title === item.title;
-    return (
-      <StyledButton
-        text={item.title}
-        onPress={() => handleCategorySelect(item)}
-        isSelected={isSelected}
-        style={dynamicStyles.categoryButton}
-        textStyle={dynamicStyles.categoryText}
-      />
-    );
-  };
-
-  const renderContentItem = ({ item, index }: { item: RowItem; index: number }) => (
-    <ListItemAnimation index={index} delay={20}>
-      <VideoCard
-        id={item.id}
-        source={item.source}
-        title={item.title}
-        poster={item.poster}
-        year={item.year}
-        rate={item.rate}
-        progress={item.progress}
-        playTime={item.play_time}
-        episodeIndex={item.episodeIndex}
-        sourceName={item.sourceName}
-        totalEpisodes={item.totalEpisodes}
-        api={api}
-        onRecordDeleted={fetchInitialData}
-        index={index}
-      />
-    </ListItemAnimation>
-  );
+  }, [throttledTagSelect]);
 
   const renderFooter = () => {
     if (!loadingMore) return null;
@@ -318,6 +284,55 @@ export default function HomeScreen() {
     },
   }), [deviceType, spacing, insets, isTV]);
 
+  const renderCategory = useCallback(({ item, index }: { item: Category; index: number }) => {
+    const isSelected = selectedCategory?.title === item.title;
+    return (
+      <StyledButton
+        text={item.title}
+        onPress={() => handleCategorySelect(item)}
+        isSelected={isSelected}
+        style={dynamicStyles.categoryButton}
+        textStyle={dynamicStyles.categoryText}
+      />
+    );
+  }, [selectedCategory?.title, handleCategorySelect, dynamicStyles.categoryButton, dynamicStyles.categoryText]);
+
+  const renderContentItem = useCallback(({ item, index }: { item: RowItem; index: number }) => (
+    <ListItemAnimation index={index} delay={20}>
+      <VideoCard
+        id={item.id}
+        source={item.source}
+        title={item.title}
+        poster={item.poster}
+        year={item.year}
+        rate={item.rate}
+        progress={item.progress}
+        playTime={item.play_time}
+        episodeIndex={item.episodeIndex}
+        sourceName={item.sourceName}
+        totalEpisodes={item.totalEpisodes}
+        api={api}
+        onRecordDeleted={fetchInitialData}
+        index={index}
+      />
+    </ListItemAnimation>
+  ), [fetchInitialData]);
+
+  const renderTagItem = useCallback(({ item, index }: { item: string; index: number }) => {
+    const isSelected = selectedTag === item;
+    return (
+      <StyledButton
+        hasTVPreferredFocus={index === 0}
+        text={item}
+        onPress={() => handleTagSelect(item)}
+        isSelected={isSelected}
+        style={dynamicStyles.categoryButton}
+        textStyle={dynamicStyles.categoryText}
+        variant="ghost"
+      />
+    );
+  }, [selectedTag, handleTagSelect, dynamicStyles.categoryButton, dynamicStyles.categoryText]);
+
   const content = (
     <ThemedView style={[commonStyles.container, dynamicStyles.container]}>
       {deviceType === "mobile" && <StatusBar barStyle="light-content" />}
@@ -333,6 +348,10 @@ export default function HomeScreen() {
             horizontal
             showsHorizontalScrollIndicator={false}
             contentContainerStyle={dynamicStyles.categoryListContent}
+            removeClippedSubviews={true}
+            maxToRenderPerBatch={isTV ? 4 : 6}
+            windowSize={isTV ? 4 : 2}
+            initialNumToRender={isTV ? 4 : 3}
           />
         </Animated.View>
       </FadeIn>
@@ -342,24 +361,15 @@ export default function HomeScreen() {
           <Animated.View style={[dynamicStyles.categoryContainer, categoryAnim]}>
             <FlatList
               data={selectedCategory.tags}
-              renderItem={({ item, index }) => {
-                const isSelected = selectedTag === item;
-                return (
-                  <StyledButton
-                    hasTVPreferredFocus={index === 0}
-                    text={item}
-                    onPress={() => handleTagSelect(item)}
-                    isSelected={isSelected}
-                    style={dynamicStyles.categoryButton}
-                    textStyle={dynamicStyles.categoryText}
-                    variant="ghost"
-                  />
-                );
-              }}
+              renderItem={renderTagItem}
               keyExtractor={(item) => item}
               horizontal
               showsHorizontalScrollIndicator={false}
               contentContainerStyle={dynamicStyles.categoryListContent}
+              removeClippedSubviews={true}
+              maxToRenderPerBatch={isTV ? 4 : 6}
+              windowSize={isTV ? 4 : 2}
+              initialNumToRender={isTV ? 4 : 3}
             />
           </Animated.View>
         </FadeIn>
@@ -403,7 +413,7 @@ export default function HomeScreen() {
   }
 
   return <ResponsiveNavigation>{content}</ResponsiveNavigation>;
-}
+});
 
 const styles = StyleSheet.create({
   logoIconContainer: {

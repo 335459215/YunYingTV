@@ -16,7 +16,7 @@ interface FadeInProps {
 /**
  * 淡入动画组件
  */
-export function FadeIn({ children, delay = 0, duration = 300, style }: FadeInProps) {
+export const FadeIn = React.memo(({ children, delay = 0, duration = 300, style }: FadeInProps) => {
   const fadeAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
@@ -37,7 +37,8 @@ export function FadeIn({ children, delay = 0, duration = 300, style }: FadeInPro
       {children}
     </Animated.View>
   );
-}
+});
+FadeIn.displayName = 'FadeIn';
 
 /**
  * 滑动进入动画组件
@@ -50,13 +51,13 @@ interface SlideInProps {
   style?: ViewStyle;
 }
 
-export function SlideIn({
+export const SlideIn = React.memo(({
   children,
   direction = 'up',
   delay = 0,
   duration = 400,
   style,
-}: SlideInProps) {
+}: SlideInProps) => {
   const slideAnim = useRef(new Animated.ValueXY({
     x: direction === 'left' ? -100 : direction === 'right' ? 100 : 0,
     y: direction === 'up' ? 100 : direction === 'down' ? -100 : 0,
@@ -87,7 +88,8 @@ export function SlideIn({
       {children}
     </Animated.View>
   );
-}
+});
+SlideIn.displayName = 'SlideIn';
 
 /**
  * 缩放动画组件
@@ -99,7 +101,7 @@ interface ScaleInProps {
   style?: ViewStyle;
 }
 
-export function ScaleIn({ children, delay = 0, duration = 300, style }: ScaleInProps) {
+export const ScaleIn = React.memo(({ children, delay = 0, duration = 300, style }: ScaleInProps) => {
   const scaleAnim = useRef(new Animated.Value(0.8)).current;
 
   useEffect(() => {
@@ -127,7 +129,8 @@ export function ScaleIn({ children, delay = 0, duration = 300, style }: ScaleInP
       {children}
     </Animated.View>
   );
-}
+});
+ScaleIn.displayName = 'ScaleIn';
 
 /**
  * 骨架屏加载组件
@@ -140,13 +143,13 @@ interface SkeletonProps {
   style?: StyleProp<ViewStyle>;
 }
 
-export function Skeleton({
+export const Skeleton = React.memo(({
   width = '100%',
   height = 20,
   borderRadius = 4,
   animated = true,
   style,
-}: SkeletonProps) {
+}: SkeletonProps) => {
   const shineAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
@@ -206,7 +209,8 @@ export function Skeleton({
       )}
     </View>
   );
-}
+});
+Skeleton.displayName = 'Skeleton';
 
 /**
  * 列表项动画组件
@@ -218,12 +222,12 @@ interface ListItemAnimationProps {
   style?: ViewStyle;
 }
 
-export function ListItemAnimation({
+export const ListItemAnimation = React.memo(({
   children,
   index,
   delay = 50,
   style,
-}: ListItemAnimationProps) {
+}: ListItemAnimationProps) => {
   return (
     <SlideIn
       direction="up"
@@ -234,7 +238,8 @@ export function ListItemAnimation({
       {children}
     </SlideIn>
   );
-}
+});
+ListItemAnimation.displayName = 'ListItemAnimation';
 
 /**
  * 页面切换动画组件
@@ -245,11 +250,11 @@ interface PageTransitionProps {
   onTransitionEnd?: () => void;
 }
 
-export function PageTransition({
+export const PageTransition = React.memo(({
   children,
   visible,
   onTransitionEnd,
-}: PageTransitionProps) {
+}: PageTransitionProps) => {
   const [mounted, setMounted] = useState(visible);
   const fadeAnim = useRef(new Animated.Value(visible ? 1 : 0)).current;
   const slideAnim = useRef(new Animated.Value(visible ? 0 : 50)).current;
@@ -307,7 +312,8 @@ export function PageTransition({
       {children}
     </Animated.View>
   );
-}
+});
+PageTransition.displayName = 'PageTransition';
 
 const styles = StyleSheet.create({
   skeleton: {

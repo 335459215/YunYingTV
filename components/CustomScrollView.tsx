@@ -217,4 +217,6 @@ const CustomScrollView = <T,>({
   );
 };
 
+CustomScrollView.displayName = 'CustomScrollView';
+
 export default CustomScrollView;

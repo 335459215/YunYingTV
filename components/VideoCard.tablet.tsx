@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useRef, forwardRef } from "react";
+import React, { useState, useCallback, useRef, forwardRef, useMemo } from "react";
 import { View, Image, StyleSheet, TouchableOpacity, Alert, Animated } from "react-native";
 import { useRouter } from "expo-router";
 import { Star, Play } from "lucide-react-native";
@@ -30,7 +30,7 @@ interface VideoCardTabletProps extends React.ComponentProps<typeof TouchableOpac
   index?: number;
 }
 
-const VideoCardTablet = forwardRef<View, VideoCardTabletProps>(
+const VideoCardTablet = React.memo(forwardRef<View, VideoCardTabletProps>(
   (
     {
       id,
@@ -131,7 +131,7 @@ const VideoCardTablet = forwardRef<View, VideoCardTabletProps>(
       transform: [{ scale: scaleAnim }],
     };
 
-    const styles = createTabletStyles(cardWidth, cardHeight, spacing);
+    const styles = useMemo(() => createTabletStyles(cardWidth, cardHeight, spacing), [cardWidth, cardHeight, spacing]);
 
     return (
       <Animated.View style={[styles.wrapper, fadeInAnim, animatedStyle]} ref={ref}>
@@ -218,7 +218,7 @@ const VideoCardTablet = forwardRef<View, VideoCardTabletProps>(
       </Animated.View>
     );
   }
-);
+));
 
 VideoCardTablet.displayName = "VideoCardTablet";
 
