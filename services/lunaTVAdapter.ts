@@ -7,40 +7,14 @@
  */
 
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { API, ApiSite, DoubanResponse, Favorite, PlayRecord, SearchResult, ServerConfig, VideoDetail } from "./api";
+import { API, ApiSite, Favorite, PlayRecord, SearchResult, ServerConfig, VideoDetail } from "./api";
+import { LunaTVSearchResult, LunaTVVideoDetail } from "./apiAdapter";
+import Logger from "@/utils/Logger";
 
-// LunaTV 特定的接口定义
-export interface LunaTVSearchResult {
-  id?: string | number;
-  vod_id?: number;
-  vod_name: string;
-  type_name: string;
-  vod_pic: string;
-  vod_year: string;
-  vod_area: string;
-  vod_remarks: string;
-  vod_content: string;
-  vod_play_from: string;
-  vod_play_url: string;
-  vod_director?: string;
-  vod_actor?: string;
-}
+const logger = Logger.withTag("LunaTVAdapter");
 
-export interface LunaTVVideoDetail {
-  vod_id: number;
-  vod_name: string;
-  type_name: string;
-  vod_pic: string;
-  vod_year: string;
-  vod_area: string;
-  vod_remarks: string;
-  vod_content: string;
-  vod_play_from: string;
-  vod_play_url: string;
-  vod_director?: string;
-  vod_actor?: string;
-  vod_class?: string;
-}
+// LunaTV 特定的接口定义 - 类型已移至 apiAdapter.ts
+export type { LunaTVSearchResult, LunaTVVideoDetail };
 
 export interface LunaTVPlayUrl {
   url: string;
@@ -62,10 +36,6 @@ export interface LunaTVServerConfig {
 }
 
 export class LunaTVAdapter extends API {
-  constructor(baseURL?: string) {
-    super(baseURL);
-  }
-
   /**
    * 重写登录方法以适配 LunaTV
    */
@@ -84,8 +54,7 @@ export class LunaTVAdapter extends API {
 
       return response.json();
     } catch (error) {
-      // LunaTV 可能不需要登录
-      console.log("LunaTV login not required or failed:", error);
+      logger.info("LunaTV login not required or failed:", error);
       return { ok: true };
     }
   }
@@ -102,7 +71,7 @@ export class LunaTVAdapter extends API {
         SiteName: data.SiteName || "LunaTV",
         StorageType: data.StorageType || "localstorage",
       };
-    } catch (error) {
+    } catch {
       // 默认配置
       return {
         SiteName: "LunaTV",
@@ -120,9 +89,10 @@ export class LunaTVAdapter extends API {
       const response = await this._fetch(url);
       const data: LunaTVResponse<LunaTVSearchResult[]> = await response.json();
 
-      const list = data.list || data.data || [];
-      const results: SearchResult[] = (Array.isArray(list) ? list : [list]).map((item: any, index) => ({
-        id: item.vod_id || item.id || index,
+      const rawList: unknown = data.list || data.data || [];
+      const items: LunaTVSearchResult[] = Array.isArray(rawList) ? (rawList as LunaTVSearchResult[]) : [rawList as LunaTVSearchResult];
+      const results: SearchResult[] = items.map((item, index) => ({
+        id: Number(item.vod_id) || index,
         title: item.vod_name,
         poster: item.vod_pic,
         episodes: this.parsePlayUrls(item.vod_play_url),
@@ -136,7 +106,7 @@ export class LunaTVAdapter extends API {
 
       return { results };
     } catch (error) {
-      console.error("LunaTV search failed:", error);
+      logger.error("LunaTV search failed:", error);
       return { results: [] };
     }
   }
@@ -170,7 +140,7 @@ export class LunaTVAdapter extends API {
         remarks: detail.vod_remarks,
       };
     } catch (error) {
-      console.error("LunaTV getVideoDetail failed:", error);
+      logger.error("LunaTV getVideoDetail failed:", error);
       throw error;
     }
   }
@@ -194,7 +164,7 @@ export class LunaTVAdapter extends API {
 
       throw new Error("Episode not found");
     } catch (error) {
-      console.error("LunaTV getPlayUrl failed:", error);
+      logger.error("LunaTV getPlayUrl failed:", error);
       throw error;
     }
   }
@@ -208,7 +178,7 @@ export class LunaTVAdapter extends API {
       const response = await this._fetch(url);
       return response.json();
     } catch (error) {
-      console.error("LunaTV getFavorites failed:", error);
+      logger.error("LunaTV getFavorites failed:", error);
       return null;
     }
   }
@@ -225,7 +195,7 @@ export class LunaTVAdapter extends API {
       });
       return response.json();
     } catch (error) {
-      console.error("LunaTV addFavorite failed:", error);
+      logger.error("LunaTV addFavorite failed:", error);
       return { success: false };
     }
   }
@@ -238,7 +208,7 @@ export class LunaTVAdapter extends API {
       const response = await this._fetch("/api/playrecords");
       return response.json();
     } catch (error) {
-      console.error("LunaTV getPlayRecords failed:", error);
+      logger.error("LunaTV getPlayRecords failed:", error);
       return {};
     }
   }
@@ -255,7 +225,7 @@ export class LunaTVAdapter extends API {
       });
       return response.json();
     } catch (error) {
-      console.error("LunaTV savePlayRecord failed:", error);
+      logger.error("LunaTV savePlayRecord failed:", error);
       return { success: false };
     }
   }
@@ -276,7 +246,7 @@ export class LunaTVAdapter extends API {
       const response = await this._fetch(url, { signal });
       return response.json();
     } catch (error) {
-      console.error("LunaTV getResources failed:", error);
+      logger.error("LunaTV getResources failed:", error);
       return [];
     }
   }
@@ -306,7 +276,7 @@ export class LunaTVAdapter extends API {
         return url;
       });
     } catch (error) {
-      console.error("parsePlayUrls failed:", error);
+      logger.error("parsePlayUrls failed:", error);
       return [];
     }
   }

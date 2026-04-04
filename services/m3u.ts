@@ -1,3 +1,12 @@
+/**
+* M3U 播放列表解析器
+* 用于解析 M3U 格式的直播频道播放列表
+*
+* M3U 格式示例:
+* #EXTINF:-1 tvg-logo="..." group-title="...", Channel Name
+* http://example.com/stream.m3u
+*/
+
 import Logger from '@/utils/Logger';
 
 const logger = Logger.withTag('M3U');
@@ -63,7 +72,7 @@ export const fetchAndParseM3u = async (m3uUrl: string): Promise<Channel[]> => {
     const m3uText = await response.text();
     return parseM3U(m3uText);
   } catch (error) {
-    logger.info("Error fetching or parsing M3U:", error);
+    logger.error("Error fetching or parsing M3U:", error);
     return []; // Return empty array on error
   }
 };
@@ -72,15 +81,5 @@ export const getPlayableUrl = (originalUrl: string | null): string | null => {
   if (!originalUrl) {
     return null;
   }
-  // In React Native, we use the proxy for all http streams to avoid potential issues.
-  // if (originalUrl.toLowerCase().startsWith('http://')) {
-  //   // Use the baseURL from the existing api instance.
-  //   if (!api.baseURL) {
-  //       console.warn("API base URL is not set. Cannot create proxy URL.")
-  //       return originalUrl; // Fallback to original URL
-  //   }
-  //   return `${api.baseURL}/proxy?url=${encodeURIComponent(originalUrl)}`;
-  // }
-  // HTTPS streams can be played directly.
   return originalUrl;
 };

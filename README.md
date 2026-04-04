@@ -4,21 +4,33 @@
 
 ## 🚀 技术栈
 
-- **Expo SDK 52** - 最新的 Expo 版本
-- **React Native 0.76** - 最新稳定版 React Native
-- **React 18.3** - 最新 React 版本
-- **TypeScript** - 类型安全的开发体验
-- **Expo Router** - 基于文件的路由系统
-- **Zustand** - 轻量级状态管理
-- **React Native TV** - 电视平台优化
+- **Expo SDK 52** - 跨平台开发框架
+- **React Native 0.76.3** - 核心框架
+- **React 18.3.1** - UI 库
+- **TypeScript 5.7** - 类型安全
+- **Expo Router** - 基于文件的路由
+- **Zustand 5.0** - 轻量级状态管理
+- **React Native TV** - TV 平台优化
 
 ## 📦 安装与运行
 
 ### 环境要求
 
-- Node.js 20+
-- npm 或 yarn
-- Expo CLI
+- Node.js 20+ (推荐 LTS 版本)
+- npm 10+ (项目使用 npm 而非 yarn)
+- Android Studio (Android 开发)
+- Xcode (iOS 开发，仅 macOS)
+
+### 环境验证
+
+```bash
+# 验证 Node.js 和 npm 版本
+node --version  # 应显示 v20.x.x 或更高
+npm --version   # 应显示 10.x.x 或更高
+
+# 验证 Expo CLI
+npx expo --version
+```
 
 ### 快速开始
 
@@ -154,7 +166,15 @@ npm run build
 2. 查看最近的 workflow runs
 3. 点击下载 artifacts 获取 APK 文件
 
-## 📁 项目结构
+## 📚 项目文档
+
+| 文档 | 说明 |
+|-----|------|
+| `README.md` | 项目主文档 |
+| `AGENTS.md` | AI 助手开发指南 |
+| `PROJECT_OPTIMIZATION_PLAN.md` | 优化改进计划 |
+| `RELEASE_NOTES.md` | 版本发布记录 |
+| `docs/archive/` | 历史文档归档 |
 
 ```
 YunYingTV/

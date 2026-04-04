@@ -33,7 +33,7 @@ class LoggerClass {
   private formatMessage(level: string, tag: string | undefined, message: any, ...args: any[]): void {
     if (!__DEV__) return;
 
-    const timestamp = new Date().toISOString().substr(11, 12);
+    const timestamp = new Date().toISOString().slice(11, 23);
     const prefix = tag ? `[${timestamp}][${level}][${tag}]` : `[${timestamp}][${level}]`;
     
     switch (level) {

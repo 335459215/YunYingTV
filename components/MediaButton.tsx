@@ -1,6 +1,7 @@
 import React, { ComponentProps } from "react";
 import { StyledButton } from "./StyledButton";
-import { StyleSheet, View, Text } from "react-native";
+import { StyleSheet, View } from "react-native";
+import { ThemedText } from "./ThemedText";
 
 type StyledButtonProps = ComponentProps<typeof StyledButton> & {
   timeLabel?: string;
@@ -9,7 +10,7 @@ type StyledButtonProps = ComponentProps<typeof StyledButton> & {
 export const MediaButton = ({ timeLabel, ...props }: StyledButtonProps) => (
   <View>
     <StyledButton {...props} style={[styles.mediaControlButton, props.style]} variant="ghost" />
-    {timeLabel && <Text style={styles.timeLabel}>{timeLabel}</Text>}
+    {timeLabel && <ThemedText style={styles.timeLabel}>{timeLabel}</ThemedText>}
   </View>
 );
 

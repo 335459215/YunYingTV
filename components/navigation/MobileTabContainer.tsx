@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
-import { View, StyleSheet, TouchableOpacity, Text, Platform, Animated } from 'react-native';
+import { View, StyleSheet, TouchableOpacity, Platform, Animated } from 'react-native';
 import { useRouter, usePathname } from 'expo-router';
 import { Home, Search, Heart, Settings, Tv } from 'lucide-react-native';
 import { Colors } from '@/constants/Colors';
 import { useResponsiveLayout, useResponsiveStyles } from '@/hooks/useResponsiveLayout';
 import type { IconComponentType } from '@/types/common';
+import { ThemedText } from '@/components/ThemedText';
 
 interface TabItem {
   key: string;
@@ -105,12 +106,12 @@ const MobileTabContainer: React.FC<MobileTabContainerProps> = ({ children }) => 
                   color={isActive ? Colors.dark.primary : '#888'}
                   strokeWidth={isActive ? 2.5 : 2}
                 />
-                <Text style={[
+                <ThemedText style={[
                   dynamicStyles.tabLabel,
                   isActive && dynamicStyles.activeTabLabel
                 ]}>
                   {tab.label}
-                </Text>
+                </ThemedText>
               </TouchableOpacity>
             </Animated.View>
           );

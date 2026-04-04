@@ -1,0 +1,2 @@
+Exception in thread "main" java.lang.RuntimeException: Could not create parent directory for lock file G:\project\OrionTV\.gradle-user-home \wrapper\dists\gradle-8.10.2-all\7iv73wktx1xtkvlq19urqw1wm\gradle-8.10.2-all.zip.lck
+	at org.gradle.wrapper.GradleWrapperMain.main(SourceFile:65)

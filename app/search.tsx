@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect, useMemo } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { View, TextInput, StyleSheet, Alert, Keyboard, TouchableOpacity } from "react-native";
 import { ThemedView } from "@/components/ThemedView";
 import { ThemedText } from "@/components/ThemedText";
@@ -61,7 +61,7 @@ export default function SearchScreen() {
       }
     } catch (err) {
       setError("搜索失败，请稍后重试。");
-      logger.info("Search failed:", err);
+      logger.error("Search failed:", err);
     } finally {
       setLoading(false);
     }

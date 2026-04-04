@@ -1,6 +1,7 @@
 import React from "react";
-import { View, Text, StyleSheet, Modal, FlatList } from "react-native";
+import { View, StyleSheet, Modal, FlatList } from "react-native";
 import { StyledButton } from "./StyledButton";
+import { ThemedText } from "./ThemedText";
 import usePlayerStore from "@/stores/playerStore";
 
 interface SpeedOption {
@@ -34,7 +35,7 @@ export const SpeedSelectionModal: React.FC = () => {
     <Modal visible={showSpeedModal} transparent={true} animationType="slide" onRequestClose={onClose}>
       <View style={styles.modalContainer}>
         <View style={styles.modalContent}>
-          <Text style={styles.modalTitle}>播放速度</Text>
+          <ThemedText style={styles.modalTitle}>播放速度</ThemedText>
           <FlatList
             data={SPEED_OPTIONS}
             numColumns={3}

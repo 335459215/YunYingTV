@@ -11,6 +11,8 @@ jobs:
   build:
     runs-on: ubuntu-latest
     timeout-minutes: 45
+    permissions:
+      contents: read
 
     steps:
       - name: Checkout code
@@ -29,10 +31,11 @@ jobs:
           distribution: 'temurin'
 
       - name: Install dependencies
-        run: npm install --legacy-peer-deps
+        run: npm ci
 
-      - name: Install Expo CLI
-        run: npm install -g expo-cli
+      - name: Read app version
+        id: app_version
+        run: echo "VERSION=$(node -p \"require('./app.json').expo.version\")" >> $GITHUB_OUTPUT
 
       - name: Restore Gradle cache
         uses: actions/cache@v4
@@ -47,14 +50,20 @@ jobs:
       - name: Make Gradle wrapper executable
         run: chmod +x android/gradlew
 
-      - name: Build Android Debug APK
-        run: |
-          cd android
-          ./gradlew assembleDebug --no-daemon
+      - name: Run lint
+        run: npm run lint
+
+      - name: Run typecheck
+        run: npm run typecheck
+
+      - name: Build Android Release APK
+        run: npm run build
+        env:
+          GRADLE_OPTS: "-Xmx4g -XX:MaxMetaspaceSize=1g"
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
         with:
-          name: app-debug
-          path: android/app/build/outputs/apk/debug/app-debug.apk
-          retention-days: 7
+          name: YunYingTV-v${{ steps.app_version.outputs.VERSION }}-release
+          path: android/app/build/outputs/apk/release/app-release.apk
+          retention-days: 14

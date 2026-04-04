@@ -47,28 +47,20 @@ export const useApiConfig = () => {
           error: null,
         });
       } catch (error) {
+        const ERROR_MESSAGES: Record<string, string> = {
+          'API_URL_NOT_SET': 'API地址未设置',
+          'UNAUTHORIZED': '服务器认证失败',
+        };
+
         let errorMessage = '服务器连接失败';
 
         if (error instanceof Error) {
-          switch (error.message) {
-            case 'API_URL_NOT_SET':
-              errorMessage = 'API地址未设置';
-              break;
-            case 'UNAUTHORIZED':
-              errorMessage = '服务器认证失败';
-              break;
-            default:
-              if (error.message.includes('Network')) {
-                errorMessage = '网络连接失败，请检查网络或服务器地址';
-              } else if (error.message.includes('timeout')) {
-                errorMessage = '连接超时，请检查服务器地址';
-              } else if (error.message.includes('404')) {
-                errorMessage = '服务器地址无效，请检查API路径';
-              } else if (error.message.includes('500')) {
-                errorMessage = '服务器内部错误';
-              }
-              break;
-          }
+          errorMessage = ERROR_MESSAGES[error.message]
+            || (error.message.includes('Network') ? '网络连接失败，请检查网络或服务器地址'
+              : error.message.includes('timeout') ? '连接超时，请检查服务器地址'
+                : error.message.includes('404') ? '服务器地址无效，请检查API路径'
+                  : error.message.includes('500') ? '服务器内部错误'
+                    : errorMessage);
         }
 
         setValidationState({

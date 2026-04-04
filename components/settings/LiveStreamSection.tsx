@@ -8,8 +8,7 @@ import { useButtonAnimation } from "@/hooks/useAnimation";
 import { Colors } from "@/constants/Colors";
 import { useResponsiveLayout } from "@/hooks/useResponsiveLayout";
 import type { TVKeyEvent } from "@/types/common";
-
-const useTVEventHandler = (handler: (event: TVKeyEvent) => void) => {};
+import { useTVEventHandler } from "@/hooks/useTVRemoteHandler";
 
 interface LiveStreamSectionProps {
   onChanged: () => void;
@@ -122,7 +121,6 @@ export const LiveStreamSection = forwardRef<LiveStreamSectionRef, LiveStreamSect
               onSelectionChange={onSelectionChange} // 可选
 
               onBlur={() => setIsInputFocused(false)}
-            // onPress={handlePress}
             />
           </Animated.View>
         </View>

@@ -17,7 +17,7 @@ import ResponsiveNavigation from "@/components/navigation/ResponsiveNavigation";
 import { useApiConfig } from "@/hooks/useApiConfig";
 import { Colors } from "@/constants/Colors";
 import { useFadeIn } from "@/hooks/useAnimation";
-import { useDebounce, useThrottle } from "@/hooks/usePerformanceOptimize";
+import { useThrottle } from "@/hooks/usePerformanceOptimize";
 import { FadeIn, ListItemAnimation } from "@/components/AnimationEnhanced";
 
 const LOAD_MORE_THRESHOLD = 200;
@@ -236,7 +236,7 @@ export default function HomeScreen() {
     );
   };
 
-  const dynamicStyles = StyleSheet.create({
+  const dynamicStyles = useMemo(() => StyleSheet.create({
     container: {
       flex: 1,
       paddingTop: deviceType === "mobile" ? insets.top : deviceType === "tablet" ? insets.top + 20 : 40,
@@ -316,7 +316,7 @@ export default function HomeScreen() {
     contentContainer: {
       flex: 1,
     },
-  });
+  }), [deviceType, spacing, insets, isTV]);
 
   const content = (
     <ThemedView style={[commonStyles.container, dynamicStyles.container]}>

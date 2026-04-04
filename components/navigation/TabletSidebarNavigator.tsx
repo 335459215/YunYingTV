@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useEffect } from 'react';
-import { View, StyleSheet, TouchableOpacity, Text, ScrollView, Animated } from 'react-native';
+import { View, StyleSheet, TouchableOpacity, ScrollView, Animated } from 'react-native';
 import { useRouter, usePathname } from 'expo-router';
 import { Home, Search, Heart, Settings, Tv, Menu, X } from 'lucide-react-native';
 import { Colors } from '@/constants/Colors';
@@ -128,12 +128,12 @@ const TabletSidebarNavigator: React.FC<TabletSidebarNavigatorProps> = ({
                   strokeWidth={isActive ? 2.5 : 2}
                 />
                 {!collapsed && (
-                  <Text style={[
+                  <ThemedText style={[
                     dynamicStyles.sidebarItemLabel,
                     isActive && dynamicStyles.activeSidebarItemLabel
                   ]}>
                     {item.label}
-                  </Text>
+                  </ThemedText>
                 )}
               </TouchableOpacity>
             );

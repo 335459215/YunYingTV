@@ -1,55 +1,69 @@
 #!/usr/bin/env node
 
 /**
- * Copy configuration files from xml/ to android/app/src/
- * Cross-platform script for GitHub Actions (Ubuntu) and local development (Windows/Mac)
+ * Copy required Android resources into the committed native project.
+ * This keeps GitHub Actions and local builds aligned without relying on Expo prebuild.
  */
 
 const fs = require('fs');
 const path = require('path');
-const { execSync } = require('child_process');
 
 const projectRoot = process.cwd();
-const sourceDir = path.join(projectRoot, 'xml');
-const destDir = path.join(projectRoot, 'android', 'app', 'src');
+const mappings = [
+  {
+    source: path.join(projectRoot, 'xml', 'AndroidManifest.xml'),
+    destination: path.join(projectRoot, 'android', 'app', 'src', 'main', 'AndroidManifest.xml'),
+    optional: false,
+  },
+  {
+    source: path.join(projectRoot, 'assets', 'tv_icons', 'icon-400x240.png'),
+    destination: path.join(projectRoot, 'android', 'app', 'src', 'main', 'res', 'drawable-nodpi', 'tv_banner.png'),
+    optional: false,
+  },
+  {
+    source: path.join(projectRoot, 'xml', 'colors.xml'),
+    destination: path.join(projectRoot, 'android', 'app', 'src', 'main', 'res', 'values', 'colors.xml'),
+    optional: false,
+  },
+  {
+    source: path.join(projectRoot, 'xml', 'colors-night.xml'),
+    destination: path.join(projectRoot, 'android', 'app', 'src', 'main', 'res', 'values-night', 'colors.xml'),
+    optional: false,
+  },
+  {
+    source: path.join(projectRoot, 'xml', 'styles.xml'),
+    destination: path.join(projectRoot, 'android', 'app', 'src', 'main', 'res', 'values', 'styles.xml'),
+    optional: false,
+  },
+];
 
-console.log('📋 Copying configuration files...');
-console.log(`   From: ${sourceDir}`);
-console.log(`   To: ${destDir}`);
+const legacyManifestPath = path.join(projectRoot, 'android', 'app', 'src', 'AndroidManifest.xml');
 
-// Check if source directory exists
-if (!fs.existsSync(sourceDir)) {
-  console.error('❌ Source directory does not exist:', sourceDir);
-  process.exit(1);
-}
-
-// Check if destination directory exists
-if (!fs.existsSync(destDir)) {
-  console.error('❌ Destination directory does not exist:', destDir);
-  console.log('💡 Try running "yarn prebuild" first');
-  process.exit(1);
-}
-
-// Copy files using cp command on Unix or xcopy on Windows
-const isWindows = process.platform === 'win32';
+console.log('📋 Syncing Android configuration files...');
 
 try {
-  if (isWindows) {
-    // Windows: use xcopy
-    execSync(`xcopy /E /I /Y "${sourceDir}\\*" "${destDir}\\*"`, { 
-      stdio: 'inherit',
-      shell: true 
-    });
-  } else {
-    // Unix (Linux/Mac): use cp
-    execSync(`cp -r "${sourceDir}/"* "${destDir}/"`, { 
-      stdio: 'inherit',
-      shell: true 
-    });
+  for (const mapping of mappings) {
+    if (!fs.existsSync(mapping.source)) {
+      if (mapping.optional) {
+        console.warn(`⚠️ Skipping optional file: ${mapping.source}`);
+        continue;
+      }
+
+      throw new Error(`Required source file does not exist: ${mapping.source}`);
+    }
+
+    fs.mkdirSync(path.dirname(mapping.destination), { recursive: true });
+    fs.copyFileSync(mapping.source, mapping.destination);
+    console.log(`   Copied: ${path.relative(projectRoot, mapping.source)} -> ${path.relative(projectRoot, mapping.destination)}`);
   }
-  
-  console.log('✅ Configuration files copied successfully!');
+
+  if (fs.existsSync(legacyManifestPath)) {
+    fs.rmSync(legacyManifestPath, { force: true });
+    console.log(`   Removed legacy file: ${path.relative(projectRoot, legacyManifestPath)}`);
+  }
+
+  console.log('✅ Android configuration sync complete!');
 } catch (error) {
-  console.error('❌ Failed to copy files:', error.message);
+  console.error('❌ Failed to sync Android configuration files:', error.message);
   process.exit(1);
 }

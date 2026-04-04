@@ -5,8 +5,7 @@ import { SettingsSection } from "./SettingsSection";
 import { useSettingsStore } from "@/stores/settingsStore";
 import useSourceStore, { useSources } from "@/stores/sourceStore";
 import type { TVKeyEvent } from "@/types/common";
-
-const useTVEventHandler = (handler: (event: TVKeyEvent) => void) => {};
+import { useTVEventHandler } from "@/hooks/useTVRemoteHandler";
 
 interface VideoSourceSectionProps {
   onChanged: () => void;

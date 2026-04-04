@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useCallback, useRef, forwardRef } from "react";
-import { View, Text, Image, StyleSheet, TouchableOpacity, Alert, Animated } from "react-native";
+import React, { useState, useEffect, useCallback, useRef, forwardRef, useMemo } from "react";
+import { View, Image, StyleSheet, TouchableOpacity, Alert, Animated } from "react-native";
 import { useRouter } from "expo-router";
 import { Star, Play } from "lucide-react-native";
 import { PlayRecordManager } from "@/services/storage";
@@ -55,9 +55,15 @@ const ResponsiveVideoCard = forwardRef<View, VideoCardProps>(
 
     const longPressTriggered = useRef(false);
     const scale = useRef(new Animated.Value(1)).current;
+    const elevation = useRef(new Animated.Value(2)).current;
+    const borderWidthAnim = useRef(new Animated.Value(0)).current;
+    const shadowOpacity = useRef(new Animated.Value(0.1)).current;
 
     const animatedStyle = {
       transform: [{ scale }],
+      elevation,
+      borderWidth: borderWidthAnim,
+      shadowOpacity,
     };
 
     const handlePress = () => {
@@ -80,28 +86,29 @@ const ResponsiveVideoCard = forwardRef<View, VideoCardProps>(
     };
 
     const handleFocus = useCallback(() => {
-      // Only apply focus scaling for TV devices
       if (responsiveConfig.deviceType === 'tv') {
         setIsFocused(true);
-        Animated.spring(scale, {
-          toValue: 1.05,
-          damping: 15,
-          stiffness: 200,
-          useNativeDriver: true,
-        }).start();
+        Animated.parallel([
+          Animated.spring(scale, { toValue: 1.08, damping: 15, stiffness: 200, useNativeDriver: true }),
+          Animated.spring(elevation, { toValue: 20, damping: 15, stiffness: 200, useNativeDriver: false }),
+          Animated.spring(borderWidthAnim, { toValue: 3, damping: 15, stiffness: 200, useNativeDriver: false }),
+          Animated.spring(shadowOpacity, { toValue: 0.6, damping: 15, stiffness: 200, useNativeDriver: false }),
+        ]).start();
       }
       onFocus?.();
-    }, [scale, onFocus, responsiveConfig.deviceType]);
+    }, [scale, elevation, borderWidthAnim, shadowOpacity, onFocus, responsiveConfig.deviceType]);
 
     const handleBlur = useCallback(() => {
       if (responsiveConfig.deviceType === 'tv') {
         setIsFocused(false);
-        Animated.spring(scale, {
-          toValue: 1.0,
-          useNativeDriver: true,
-        }).start();
+        Animated.parallel([
+          Animated.spring(scale, { toValue: 1.0, damping: 15, stiffness: 200, useNativeDriver: true }),
+          Animated.spring(elevation, { toValue: 2, damping: 15, stiffness: 200, useNativeDriver: false }),
+          Animated.spring(borderWidthAnim, { toValue: 0, damping: 15, stiffness: 200, useNativeDriver: false }),
+          Animated.spring(shadowOpacity, { toValue: 0.1, damping: 15, stiffness: 200, useNativeDriver: false }),
+        ]).start();
       }
-    }, [scale, responsiveConfig.deviceType]);
+    }, [scale, elevation, borderWidthAnim, shadowOpacity, responsiveConfig.deviceType]);
 
     useEffect(() => {
       Animated.timing(fadeAnim, {
@@ -141,7 +148,7 @@ const ResponsiveVideoCard = forwardRef<View, VideoCardProps>(
                 router.replace("/");
               }
             } catch (error) {
-              logger.info("Failed to delete play record:", error);
+              logger.error("Failed to delete play record:", error);
               Alert.alert("错误", "删除观看记录失败，请重试");
             }
           },
@@ -156,7 +163,7 @@ const ResponsiveVideoCard = forwardRef<View, VideoCardProps>(
     const cardWidth = responsiveConfig.cardWidth;
     const cardHeight = responsiveConfig.cardHeight;
 
-    const dynamicStyles = StyleSheet.create({
+    const dynamicStyles = useMemo(() => StyleSheet.create({
       wrapper: {
         marginHorizontal: responsiveConfig.spacing / 2,
       },
@@ -166,6 +173,7 @@ const ResponsiveVideoCard = forwardRef<View, VideoCardProps>(
         borderRadius: responsiveConfig.deviceType === 'mobile' ? 8 : responsiveConfig.deviceType === 'tablet' ? 10 : 8,
         backgroundColor: "#222",
         overflow: "hidden",
+        borderColor: "#4CAF50",
       },
       infoContainer: {
         width: cardWidth,
@@ -197,7 +205,7 @@ const ResponsiveVideoCard = forwardRef<View, VideoCardProps>(
         fontSize: responsiveConfig.deviceType === 'mobile' ? 10 : 12,
         fontWeight: "bold",
       },
-    });
+    }), [responsiveConfig.spacing, responsiveConfig.deviceType, cardWidth, cardHeight]);
 
     return (
       <Animated.View style={[dynamicStyles.wrapper, animatedStyle, { opacity: fadeAnim }]}>
@@ -246,9 +254,9 @@ const ResponsiveVideoCard = forwardRef<View, VideoCardProps>(
                 top: responsiveConfig.spacing / 2,
                 right: responsiveConfig.spacing / 2 
               }]}>
-                <Text style={[styles.badgeText, { 
+                <ThemedText style={[styles.badgeText, { 
                   fontSize: responsiveConfig.deviceType === 'mobile' ? 10 : 12 
-                }]}>{year}</Text>
+                }]}>{year}</ThemedText>
               </View>
             )}
             {sourceName && (
@@ -256,9 +264,9 @@ const ResponsiveVideoCard = forwardRef<View, VideoCardProps>(
                 top: responsiveConfig.spacing / 2,
                 left: responsiveConfig.spacing / 2 
               }]}>
-                <Text style={[styles.badgeText, { 
+                <ThemedText style={[styles.badgeText, { 
                   fontSize: responsiveConfig.deviceType === 'mobile' ? 10 : 12 
-                }]}>{sourceName}</Text>
+                }]}>{sourceName}</ThemedText>
               </View>
             )}
           </View>

@@ -10,7 +10,7 @@ import { useCallback, useRef, useEffect, useMemo, useState } from 'react';
  * @param func 要执行的函数
  * @param delay 延迟时间（毫秒）
  */
-export function useDebounce<T extends (...args: any[]) => any>(
+export function useDebounce<T extends (...args: never[]) => unknown>(
   func: T,
   delay: number = 300
 ) {
@@ -42,7 +42,7 @@ export function useDebounce<T extends (...args: any[]) => any>(
  * @param func 要执行的函数
  * @param limit 时间限制（毫秒）
  */
-export function useThrottle<T extends (...args: any[]) => any>(
+export function useThrottle<T extends (...args: never[]) => unknown>(
   func: T,
   limit: number = 300
 ) {
@@ -104,7 +104,7 @@ export function useDeepMemo<T>(value: T): T {
  */
 export function useLazyComponent<T>(
   factory: () => T,
-  deps: any[] = []
+  deps: readonly unknown[] = []
 ): T | null {
   const componentRef = useRef<T | null>(null);
   const [loaded, setLoaded] = useState(false);
@@ -125,7 +125,9 @@ export function useLazyComponent<T>(
     return () => {
       mounted = false;
     };
-  }, deps);
+    // This hook intentionally lets callers control the extra dependencies.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [factory, ...deps]);
 
   return loaded ? componentRef.current : null;
 }
@@ -144,8 +146,6 @@ export function useVirtualList<T>(
   overscan: number = 5
 ) {
   const totalHeight = items.length * itemHeight;
-  const visibleCount = Math.ceil(containerHeight / itemHeight);
-  
   const [scrollTop, setScrollTop] = useState(0);
 
   const startIndex = Math.max(0, Math.floor(scrollTop / itemHeight) - overscan);
@@ -207,11 +207,11 @@ export function useLazyLoadImage(src: string, placeholder: string = '') {
  * 请求竞态处理 Hook
  * @param request 请求函数
  */
-export function useLatestRequest<T extends (...args: any[]) => Promise<any>>() {
+export function useLatestRequest() {
   const abortControllerRef = useRef<AbortController | null>(null);
 
   const execute = useCallback(
-    async (request: () => Promise<T>, ...args: any[]) => {
+    async (request: () => Promise<unknown>, ...args: unknown[]): Promise<unknown> => {
       // 取消上一个请求
       if (abortControllerRef.current) {
         abortControllerRef.current.abort();

@@ -4,7 +4,10 @@
  */
 
 import { useState, useCallback, useEffect, useRef } from 'react';
-import { InteractionManager, PanResponder, GestureResponderEvent } from 'react-native';
+import { InteractionManager, PanResponder } from 'react-native';
+import Logger from '@/utils/Logger';
+
+const logger = Logger.withTag('InteractionOptimize');
 
 /**
  * 快速响应 Hook - 立即反馈，后台处理
@@ -79,7 +82,7 @@ export function useTouchFeedback(scale: number = 0.95) {
  */
 export function useDeferredLoading<T>(
   factory: () => Promise<T>,
-  deps: any[] = [],
+  deps: readonly unknown[] = [],
   delay: number = 100
 ) {
   const [data, setData] = useState<T | null>(null);
@@ -116,7 +119,9 @@ export function useDeferredLoading<T>(
       mounted = false;
       clearTimeout(timeout);
     };
-  }, deps);
+    // This hook intentionally lets callers control the extra dependencies.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [factory, delay, ...deps]);
 
   return { data, loading, error };
 }
@@ -133,15 +138,7 @@ export function useBatchProcessor<T>(
   const processingRef = useRef(false);
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  const add = useCallback((item: T) => {
-    queueRef.current.push(item);
-
-    if (!processingRef.current) {
-      process();
-    }
-  }, []);
-
-  const process = useCallback(async () => {
+  const processQueue = useCallback(async () => {
     if (processingRef.current || queueRef.current.length === 0) {
       return;
     }
@@ -154,7 +151,7 @@ export function useBatchProcessor<T>(
       try {
         await processor(batch);
       } catch (error) {
-        console.error('Batch processing failed:', error);
+        logger.error('Batch processing failed:', error);
         // 失败时重新加入队列
         queueRef.current.unshift(...batch);
       }
@@ -168,6 +165,14 @@ export function useBatchProcessor<T>(
 
     processingRef.current = false;
   }, [processor, batchSize, delay]);
+
+  const add = useCallback((item: T) => {
+    queueRef.current.push(item);
+
+    if (!processingRef.current) {
+      void processQueue();
+    }
+  }, [processQueue]);
 
   useEffect(() => {
     return () => {
@@ -232,12 +237,14 @@ export function useOptimizedGesture(
 /**
  * 内存优化 - 清理不需要的数据
  */
-export function useMemoryCleanup(cleanupFn: () => void, deps: any[] = []) {
+export function useMemoryCleanup(cleanupFn: () => void, deps: readonly unknown[] = []) {
   useEffect(() => {
     return () => {
       cleanupFn();
     };
-  }, deps);
+    // This hook intentionally lets callers control the extra dependencies.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [cleanupFn, ...deps]);
 }
 
 /**

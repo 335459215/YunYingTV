@@ -1,11 +1,10 @@
 import React, { useState } from "react";
-import { View, Text, StyleSheet, Modal, FlatList } from "react-native";
+import { View, StyleSheet, Modal, FlatList } from "react-native";
 import { StyledButton } from "./StyledButton";
+import { ThemedText } from "./ThemedText";
 import usePlayerStore from "@/stores/playerStore";
 
-interface EpisodeSelectionModalProps {}
-
-export const EpisodeSelectionModal: React.FC<EpisodeSelectionModalProps> = () => {
+export const EpisodeSelectionModal = () => {
   const { showEpisodeModal, episodes, currentEpisodeIndex, playEpisode, setShowEpisodeModal } = usePlayerStore();
 
   const [episodeGroupSize] = useState(30);
@@ -24,7 +23,7 @@ export const EpisodeSelectionModal: React.FC<EpisodeSelectionModalProps> = () =>
     <Modal visible={showEpisodeModal} transparent={true} animationType="slide" onRequestClose={onClose}>
       <View style={styles.modalContainer}>
         <View style={styles.modalContent}>
-          <Text style={styles.modalTitle}>选择剧集</Text>
+          <ThemedText style={styles.modalTitle}>选择剧集</ThemedText>
 
           {episodes.length > episodeGroupSize && (
             <View style={styles.episodeGroupContainer}>

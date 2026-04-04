@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef, forwardRef } from "react";
-import { View, Text, Image, StyleSheet, Pressable, TouchableOpacity, Alert, Animated, Platform } from "react-native";
+import { View, Image, StyleSheet, Pressable, TouchableOpacity, Alert, Animated, Platform } from "react-native";
 import { useRouter } from "expo-router";
 import { Star, Play } from "lucide-react-native";
 import { PlayRecordManager } from "@/services/storage";
@@ -120,7 +120,7 @@ const VideoCard = forwardRef<View, VideoCardProps>(
                 router.replace("/");
               }
             } catch (error) {
-              logger.info("Failed to delete play record:", error);
+              logger.error("Failed to delete play record:", error);
               Alert.alert("错误", "删除观看记录失败，请重试");
             }
           },
@@ -217,14 +217,14 @@ const VideoCard = forwardRef<View, VideoCardProps>(
             {/* 年份徽章 */}
             {year && (
               <View style={styles.yearBadge}>
-                <Text style={styles.badgeText}>{year}</Text>
+                <ThemedText style={styles.badgeText}>{year}</ThemedText>
               </View>
             )}
             
             {/* 源名称徽章 */}
             {sourceName && (
               <View style={styles.sourceNameBadge}>
-                <Text style={styles.badgeText}>{sourceName}</Text>
+                <ThemedText style={styles.badgeText}>{sourceName}</ThemedText>
               </View>
             )}
           </Animated.View>

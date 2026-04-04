@@ -4,13 +4,13 @@
  */
 
 import React, { useEffect, useRef, useState } from 'react';
-import { View, Animated, StyleSheet, Easing } from 'react-native';
+import { View, Animated, StyleSheet, Easing, ViewStyle, StyleProp } from 'react-native';
 
 interface FadeInProps {
   children: React.ReactNode;
   delay?: number;
   duration?: number;
-  style?: any;
+  style?: ViewStyle;
 }
 
 /**
@@ -47,7 +47,7 @@ interface SlideInProps {
   direction?: 'left' | 'right' | 'up' | 'down';
   delay?: number;
   duration?: number;
-  style?: any;
+  style?: ViewStyle;
 }
 
 export function SlideIn({
@@ -96,7 +96,7 @@ interface ScaleInProps {
   children: React.ReactNode;
   delay?: number;
   duration?: number;
-  style?: any;
+  style?: ViewStyle;
 }
 
 export function ScaleIn({ children, delay = 0, duration = 300, style }: ScaleInProps) {
@@ -137,7 +137,7 @@ interface SkeletonProps {
   height?: number | string;
   borderRadius?: number;
   animated?: boolean;
-  style?: any;
+  style?: StyleProp<ViewStyle>;
 }
 
 export function Skeleton({
@@ -179,10 +179,10 @@ export function Skeleton({
       style={[
         styles.skeleton,
         {
-          width,
-          height,
+          width: (typeof width === 'number' ? width : width) as unknown as number,
+          height: (typeof height === 'number' ? height : height) as unknown as number,
           borderRadius,
-          overflow: 'hidden',
+          overflow: 'hidden' as const,
         },
         style,
       ]}
@@ -215,7 +215,7 @@ interface ListItemAnimationProps {
   children: React.ReactNode;
   index: number;
   delay?: number;
-  style?: any;
+  style?: ViewStyle;
 }
 
 export function ListItemAnimation({
@@ -290,7 +290,7 @@ export function PageTransition({
         onTransitionEnd?.();
       });
     }
-  }, [visible]);
+  }, [fadeAnim, onTransitionEnd, slideAnim, visible]);
 
   if (!mounted) return null;
 

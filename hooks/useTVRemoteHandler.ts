@@ -1,12 +1,8 @@
 import { useEffect, useRef, useCallback } from "react";
 import usePlayerStore from "@/stores/playerStore";
+import type { TVKeyEvent } from "@/types/common";
 
-type HWEvent = {
-  eventType: string;
-  eventKeyAction: number;
-};
-
-const useTVEventHandler = (handler: (event: HWEvent) => void) => {};
+export const useTVEventHandler = (_handler: (event: TVKeyEvent) => void) => {};
 
 const SEEK_STEP = 15 * 1000;
 const LONG_SEEK_STEP = 30 * 1000;
@@ -68,7 +64,7 @@ export const useTVRemoteHandler = () => {
   }, [clearFastSeekInterval]);
 
   const handleTVEvent = useCallback(
-    (event: HWEvent) => {
+    (event: TVKeyEvent) => {
       if (showEpisodeModal || showSourceModal || showSpeedModal) {
         return;
       }

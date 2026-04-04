@@ -175,9 +175,17 @@ export const useStaggeredFadeIn = (index: number, baseDelay: number = 50) => {
 export const usePulseAnimation = (active: boolean = true) => {
   const scale = useRef(new Animated.Value(1)).current;
   const opacity = useRef(new Animated.Value(1)).current;
+  const pulseRef = useRef<Animated.CompositeAnimation | null>(null);
 
   useEffect(() => {
-    if (!active) return;
+    if (!active) {
+      pulseRef.current?.stop();
+      Animated.parallel([
+        Animated.timing(scale, { toValue: 1, duration: 200, useNativeDriver: true }),
+        Animated.timing(opacity, { toValue: 1, duration: 200, useNativeDriver: true }),
+      ]).start();
+      return;
+    }
 
     const pulse = Animated.loop(
       Animated.sequence([
@@ -212,6 +220,7 @@ export const usePulseAnimation = (active: boolean = true) => {
       ])
     );
 
+    pulseRef.current = pulse;
     pulse.start();
     return () => pulse.stop();
   }, [active, scale, opacity]);

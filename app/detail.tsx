@@ -1,5 +1,5 @@
 import React, { useEffect } from "react";
-import { View, Text, StyleSheet, Image, ScrollView, ActivityIndicator } from "react-native";
+import { View, StyleSheet, Image, ScrollView, ActivityIndicator } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { ThemedView } from "@/components/ThemedView";
 import { ThemedText } from "@/components/ThemedText";
@@ -157,14 +157,14 @@ export default function DetailScreen() {
                     <ThemedText style={dynamicStyles.sourceButtonText}>{item.source_name}</ThemedText>
                     {item.episodes.length > 1 && (
                       <View style={[dynamicStyles.badge, isSelected && dynamicStyles.selectedBadge]}>
-                        <Text style={dynamicStyles.badgeText}>
+                        <ThemedText style={dynamicStyles.badgeText}>
                           {item.episodes.length > 99 ? "99+" : `${item.episodes.length}`} 集
-                        </Text>
+                        </ThemedText>
                       </View>
                     )}
                     {item.resolution && (
                       <View style={[dynamicStyles.badge, { backgroundColor: "#666" }, isSelected && dynamicStyles.selectedBadge]}>
-                        <Text style={dynamicStyles.badgeText}>{item.resolution}</Text>
+                        <ThemedText style={dynamicStyles.badgeText}>{item.resolution}</ThemedText>
                       </View>
                     )}
                   </StyledButton>
@@ -240,14 +240,14 @@ export default function DetailScreen() {
                       <ThemedText style={dynamicStyles.sourceButtonText}>{item.source_name}</ThemedText>
                       {item.episodes.length > 1 && (
                         <View style={[dynamicStyles.badge, isSelected && dynamicStyles.selectedBadge]}>
-                          <Text style={dynamicStyles.badgeText}>
+                          <ThemedText style={dynamicStyles.badgeText}>
                             {item.episodes.length > 99 ? "99+" : `${item.episodes.length}`} 集
-                          </Text>
+                          </ThemedText>
                         </View>
                       )}
                       {item.resolution && (
                         <View style={[dynamicStyles.badge, { backgroundColor: "#666" }, isSelected && dynamicStyles.selectedBadge]}>
-                          <Text style={dynamicStyles.badgeText}>{item.resolution}</Text>
+                          <ThemedText style={dynamicStyles.badgeText}>{item.resolution}</ThemedText>
                         </View>
                       )}
                     </StyledButton>

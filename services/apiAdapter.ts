@@ -5,6 +5,9 @@
  */
 
 import { SearchResult, VideoDetail, PlayRecord, Favorite } from "./api";
+import Logger from "@/utils/Logger";
+
+const logger = Logger.withTag("ApiAdapter");
 
 /**
  * LunaTV 数据格式接口
@@ -81,7 +84,7 @@ export class ApiAdapter {
         return url;
       });
     } catch (error) {
-      console.error("parsePlayUrls failed:", error);
+      logger.error("parsePlayUrls failed:", error);
       return [];
     }
   }
@@ -163,110 +166,116 @@ export class ApiAdapter {
   /**
    * 智能适配搜索结果（支持多种后端格式）
    */
-  static adaptSearchResult(data: any, source: string): SearchResult[] {
+  static adaptSearchResult(data: unknown, source: string): SearchResult[] {
     if (!data) return [];
 
+    const dataObj = data as Record<string, unknown>;
     // 如果是数组，直接处理
-    const items = Array.isArray(data) ? data : (data.results || data.list || []);
-    
-    return items.map((item: any, index: number) => {
+    const rawItems = Array.isArray(data) ? data : (dataObj.results || dataObj.list);
+    const items: unknown[] = Array.isArray(rawItems) ? rawItems : [];
+
+    return items.map((item: unknown, index: number): SearchResult => {
+      const record = item as Record<string, unknown>;
       // 检测是否为 LunaTV 格式
-      if (item.vod_name || item.vod_id) {
+      if (record.vod_name || record.vod_id) {
         return this.adaptLunaTVSearchResult(item as LunaTVSearchResult, index);
       }
-      
+
       // 否则假设已经是标准格式
       return {
-        id: item.id || index,
-        title: item.title || item.vod_name,
-        poster: item.poster || item.vod_pic,
-        episodes: item.episodes || this.parsePlayUrls(item.vod_play_url || ""),
-        source: item.source || source,
-        source_name: item.source_name || item.vod_play_from || source,
-        class: item.class || item.vod_class,
-        year: item.year || item.vod_year,
-        desc: item.desc || this.stripHtml(item.vod_content || ""),
-        type_name: item.type_name || item.vod_type_name,
-      } as SearchResult;
+        id: typeof record.id === 'number' ? record.id : index,
+        title: String(record.title || record.vod_name || ""),
+        poster: String(record.poster || record.vod_pic || ""),
+        episodes: Array.isArray(record.episodes) ? record.episodes as string[] : this.parsePlayUrls(String(record.vod_play_url || "")),
+        source: String(record.source || source),
+        source_name: String(record.source_name || record.vod_play_from || source),
+        class: String(record.class || record.vod_class || ""),
+        year: String(record.year || record.vod_year || ""),
+        desc: String(record.desc || this.stripHtml(String(record.vod_content || ""))),
+        type_name: String(record.type_name || record.vod_type_name || ""),
+      };
     });
   }
 
   /**
    * 智能适配视频详情（支持多种后端格式）
    */
-  static adaptVideoDetail(data: any, source: string): VideoDetail | null {
+  static adaptVideoDetail(data: unknown, source: string): VideoDetail | null {
     if (!data) return null;
 
+    const record = data as Record<string, unknown>;
     // 检测是否为 LunaTV 格式
-    if (data.vod_name || data.vod_id) {
+    if (record.vod_name || record.vod_id) {
       return this.adaptLunaTVVideoDetail(data as LunaTVVideoDetail, source);
     }
-    
+
     // 否则假设已经是标准格式
     return {
-      id: String(data.id || data.vod_id),
-      title: data.title || data.vod_name,
-      poster: data.poster || data.vod_pic,
+      id: String(record.id || record.vod_id || ""),
+      title: String(record.title || record.vod_name || ""),
+      poster: String(record.poster || record.vod_pic || ""),
       source: source,
-      source_name: data.source_name || data.vod_play_from || source,
-      desc: data.desc || this.stripHtml(data.vod_content || ""),
-      type: data.type || data.type_name,
-      year: data.year || data.vod_year,
-      area: data.area || data.vod_area,
-      director: data.director || data.vod_director || "",
-      actor: data.actor || data.vod_actor || "",
-      remarks: data.remarks || data.vod_remarks,
-    } as VideoDetail;
+      source_name: String(record.source_name || record.vod_play_from || source),
+      desc: String(record.desc || this.stripHtml(String(record.vod_content || ""))),
+      type: String(record.type || record.type_name || ""),
+      year: String(record.year || record.vod_year || ""),
+      area: String(record.area || record.vod_area || ""),
+      director: String(record.director || record.vod_director || ""),
+      actor: String(record.actor || record.vod_actor || ""),
+      remarks: String(record.remarks || record.vod_remarks || ""),
+    };
   }
 
   /**
    * 适配播放记录（支持多种后端格式）
    */
-  static adaptPlayRecord(data: any): Record<string, PlayRecord> {
+  static adaptPlayRecord(data: unknown): Record<string, PlayRecord> {
     if (!data) return {};
 
+    const dataObj = data as Record<string, unknown>;
     const records: Record<string, PlayRecord> = {};
-    
-    for (const [key, value] of Object.entries(data)) {
-      const record = value as any;
+
+    for (const [key, value] of Object.entries(dataObj)) {
+      const record = value as Record<string, unknown>;
       records[key] = {
-        title: record.title || "",
-        source_name: record.source_name || "",
-        cover: record.cover || "",
-        index: record.index || 0,
-        total_episodes: record.total_episodes || 0,
-        play_time: record.play_time || 0,
-        total_time: record.total_time || 0,
-        save_time: record.save_time || Date.now(),
-        year: record.year || "",
-        playbackRate: record.playbackRate || 1,
+        title: String(record.title || ""),
+        source_name: String(record.source_name || ""),
+        cover: String(record.cover || ""),
+        index: Number(record.index) || 0,
+        total_episodes: Number(record.total_episodes) || 0,
+        play_time: Number(record.play_time) || 0,
+        total_time: Number(record.total_time) || 0,
+        save_time: Number(record.save_time) || Date.now(),
+        year: String(record.year || ""),
+        playbackRate: Number(record.playbackRate) || 1,
       };
     }
-    
+
     return records;
   }
 
   /**
    * 适配收藏数据（支持多种后端格式）
    */
-  static adaptFavorite(data: any): Record<string, Favorite> {
+  static adaptFavorite(data: unknown): Record<string, Favorite> {
     if (!data) return {};
 
+    const dataObj = data as Record<string, unknown>;
     const favorites: Record<string, Favorite> = {};
-    
-    for (const [key, value] of Object.entries(data)) {
-      const favorite = value as any;
+
+    for (const [key, value] of Object.entries(dataObj)) {
+      const favorite = value as Record<string, unknown>;
       favorites[key] = {
-        cover: favorite.cover || "",
-        title: favorite.title || "",
-        source_name: favorite.source_name || "",
-        total_episodes: favorite.total_episodes || 0,
-        search_title: favorite.search_title || favorite.title || "",
-        year: favorite.year || "",
-        save_time: favorite.save_time || Date.now(),
+        cover: String(favorite.cover || ""),
+        title: String(favorite.title || ""),
+        source_name: String(favorite.source_name || ""),
+        total_episodes: Number(favorite.total_episodes) || 0,
+        search_title: String(favorite.search_title || favorite.title || ""),
+        year: String(favorite.year || ""),
+        save_time: Number(favorite.save_time) || Date.now(),
       };
     }
-    
+
     return favorites;
   }
 }

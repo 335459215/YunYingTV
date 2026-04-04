@@ -1,18 +1,31 @@
 import React from "react";
-import { View, Text, StyleSheet, Pressable } from "react-native";
+import { View, StyleSheet, Pressable } from "react-native";
 import { Pause, Play, SkipForward, List, Tv, ArrowDownToDot, ArrowUpFromDot, Gauge } from "lucide-react-native";
 import { ThemedText } from "@/components/ThemedText";
 import { MediaButton } from "@/components/MediaButton";
+import { formatTime } from "@/utils/timeUtils";
 
 import usePlayerStore from "@/stores/playerStore";
 import useDetailStore from "@/stores/detailStore";
 import { useSources } from "@/stores/sourceStore";
 
+/**
+ * PlayerControls 组件属性
+ * @interface PlayerControlsProps
+ */
 interface PlayerControlsProps {
+  /** 是否显示控制栏 */
   showControls: boolean;
+  /** 设置显示控制栏的回调 */
   setShowControls: (show: boolean) => void;
 }
 
+/**
+ * 播放器控制栏组件
+ * 提供播放/暂停、快进、选集、选源、调速等功能
+ * @param {PlayerControlsProps} props - 组件属性
+ * @returns {React.ReactElement} 播放器控制栏组件
+ */
 export const PlayerControls: React.FC<PlayerControlsProps> = ({ showControls, setShowControls }) => {
   const {
     currentEpisodeIndex,
@@ -43,14 +56,6 @@ export const PlayerControls: React.FC<PlayerControlsProps> = ({ showControls, se
   const currentSourceName = currentSource?.source_name;
   const hasNextEpisode = currentEpisodeIndex < (episodes.length || 0) - 1;
 
-  const formatTime = (milliseconds: number) => {
-    if (!milliseconds) return "00:00";
-    const totalSeconds = Math.floor(milliseconds / 1000);
-    const minutes = Math.floor(totalSeconds / 60);
-    const seconds = totalSeconds % 60;
-    return `${minutes.toString().padStart(2, "0")}:${seconds.toString().padStart(2, "0")}`;
-  };
-
   const onPlayNextEpisode = () => {
     if (hasNextEpisode) {
       playEpisode(currentEpisodeIndex + 1);
@@ -60,10 +65,10 @@ export const PlayerControls: React.FC<PlayerControlsProps> = ({ showControls, se
   return (
     <View style={styles.controlsOverlay}>
       <View style={styles.topControls}>
-        <Text style={styles.controlTitle}>
+        <ThemedText style={styles.controlTitle}>
           {videoTitle} {currentEpisodeTitle ? `- ${currentEpisodeTitle}` : ""}{" "}
           {currentSourceName ? `(${currentSourceName})` : ""}
-        </Text>
+        </ThemedText>
       </View>
 
       <View style={styles.bottomControlsContainer}>

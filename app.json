@@ -10,7 +10,8 @@
           "android": {
             "newArchEnabled": false,
             "enableProguardInReleaseBuilds": true,
-            "enableShrinkResourcesInReleaseBuilds": true
+            "enableShrinkResourcesInReleaseBuilds": true,
+            "kotlinVersion": "1.9.25"
           }
         }
       ],
@@ -20,6 +21,7 @@
       "typedRoutes": true
     },
     "name": "YunYingTV",
+    "version": "0.01",
     "slug": "yunying-tv",
     "orientation": "default",
     "icon": "./assets/images/icon.png",
@@ -30,6 +32,7 @@
     "platforms": ["ios", "android", "web"],
     "android": {
       "package": "com.yunyingtv",
+      "versionCode": 1,
       "usesCleartextTraffic": true,
       "hardwareAcceleration": true,
       "networkSecurityConfig": "@xml/network_security_config",
@@ -57,6 +60,7 @@
     },
     "ios": {
       "bundleIdentifier": "com.yunyingtv",
+      "buildNumber": "1",
       "supportsTablet": true,
       "requireFullScreen": false,
       "supportedInterfaceOrientations": [

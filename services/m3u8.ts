@@ -1,3 +1,12 @@
+/**
+ * M3U8 分辨率检测器
+ * 用于从 HLS (HTTP Live Streaming) M3U8 播放列表中检测视频分辨率
+ *
+ * 与 m3u.ts 的区别:
+ * - m3u.ts: 解析 M3U 播放列表 (直播频道)
+ * - m3u8.ts: 解析 M3U8 HLS 列表 (点播视频流，支持多分辨率)
+ */
+
 import Logger from '@/utils/Logger';
 
 const logger = Logger.withTag('M3U8');
@@ -15,18 +24,18 @@ export const getResolutionFromM3U8 = async (
   signal?: AbortSignal
 ): Promise<string | null> => {
   const perfStart = performance.now();
-  logger.info(`[PERF] M3U8 resolution detection START - url: ${url.substring(0, 100)}...`);
+  logger.debug(`[PERF] M3U8 resolution detection START - url: ${url.substring(0, 100)}...`);
   
   // 1. Check cache first
   const cachedEntry = resolutionCache[url];
   if (cachedEntry && Date.now() - cachedEntry.timestamp < CACHE_DURATION) {
     const perfEnd = performance.now();
-    logger.info(`[PERF] M3U8 resolution detection CACHED - took ${(perfEnd - perfStart).toFixed(2)}ms, resolution: ${cachedEntry.resolution}`);
+    logger.debug(`[PERF] M3U8 resolution detection CACHED - took ${(perfEnd - perfStart).toFixed(2)}ms, resolution: ${cachedEntry.resolution}`);
     return cachedEntry.resolution;
   }
 
   if (!url.toLowerCase().endsWith(".m3u8")) {
-    logger.info(`[PERF] M3U8 resolution detection SKIPPED - not M3U8 file`);
+    logger.debug(`[PERF] M3U8 resolution detection SKIPPED - not M3U8 file`);
     return null;
   }
 
@@ -34,7 +43,7 @@ export const getResolutionFromM3U8 = async (
     const fetchStart = performance.now();
     const response = await fetch(url, { signal });
     const fetchEnd = performance.now();
-    logger.info(`[PERF] M3U8 fetch took ${(fetchEnd - fetchStart).toFixed(2)}ms, status: ${response.status}`);
+    logger.debug(`[PERF] M3U8 fetch took ${(fetchEnd - fetchStart).toFixed(2)}ms, status: ${response.status}`);
     
     if (!response.ok) {
       return null;
@@ -60,7 +69,7 @@ export const getResolutionFromM3U8 = async (
     }
     
     const parseEnd = performance.now();
-    logger.info(`[PERF] M3U8 parsing took ${(parseEnd - parseStart).toFixed(2)}ms, lines: ${lines.length}`);
+    logger.debug(`[PERF] M3U8 parsing took ${(parseEnd - parseStart).toFixed(2)}ms, lines: ${lines.length}`);
 
     // 2. Store result in cache
     resolutionCache[url] = {
@@ -69,12 +78,12 @@ export const getResolutionFromM3U8 = async (
     };
 
     const perfEnd = performance.now();
-    logger.info(`[PERF] M3U8 resolution detection COMPLETE - took ${(perfEnd - perfStart).toFixed(2)}ms, resolution: ${resolutionString}`);
+    logger.debug(`[PERF] M3U8 resolution detection COMPLETE - took ${(perfEnd - perfStart).toFixed(2)}ms, resolution: ${resolutionString}`);
     
     return resolutionString;
   } catch (error) {
     const perfEnd = performance.now();
-    logger.info(`[PERF] M3U8 resolution detection ERROR - took ${(perfEnd - perfStart).toFixed(2)}ms, error: ${error}`);
+    logger.debug(`[PERF] M3U8 resolution detection ERROR - took ${(perfEnd - perfStart).toFixed(2)}ms, error: ${error}`);
     return null;
   }
 };

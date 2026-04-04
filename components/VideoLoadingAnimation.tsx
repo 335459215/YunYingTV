@@ -200,12 +200,6 @@ const VideoLoadingAnimation: React.FC<VideoLoadingAnimationProps> = ({ showProgr
           </View>
         </Animated.View>
 
-        {/* <View style={styles.loadingDots}>
-          <Animated.View style={[styles.dot, animatedStyles.bounce[0]]} />
-          <Animated.View style={[styles.dot, animatedStyles.bounce[1]]} />
-          <Animated.View style={[styles.dot, animatedStyles.bounce[2]]} />
-        </View> */}
-
         {showProgressBar && (
           <View style={styles.progressBar}>
             <Animated.View style={[styles.progressFill, animatedStyles.progress]}>

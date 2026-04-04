@@ -3,6 +3,9 @@ import { api, SearchResult, PlayRecord } from "@/services/api";
 import { PlayRecordManager } from "@/services/storage";
 import useAuthStore from "./authStore";
 import { useSettingsStore } from "./settingsStore";
+import Logger from "@/utils/Logger";
+
+const logger = Logger.withTag('HomeStore');
 
 export type RowItem = (SearchResult | PlayRecord) & {
   id: string;
@@ -75,6 +78,15 @@ const isValidCache = (cacheItem: CacheItem) => {
   return Date.now() - cacheItem.timestamp < CACHE_EXPIRE_TIME;
 };
 
+const cleanupExpiredCache = () => {
+  for (const [key, value] of dataCache.entries()) {
+    if (!isValidCache(value)) {
+      dataCache.delete(key);
+    }
+  }
+  logger.info(`Cache cleanup complete. Current size: ${dataCache.size}`);
+};
+
 interface HomeState {
   categories: Category[];
   selectedCategory: Category;
@@ -89,6 +101,7 @@ interface HomeState {
   selectCategory: (category: Category) => void;
   refreshPlayRecords: () => Promise<void>;
   clearError: () => void;
+  clearCache: () => void;
 }
 
 // 内存缓存，应用生命周期内有效
@@ -189,16 +202,13 @@ const useHomeStore = create<HomeState>((set, get) => ({
 
         if (pageStart === 0) {
           // 清理过期缓存
-          for (const [key, value] of dataCache.entries()) {
-            if (!isValidCache(value)) {
-              dataCache.delete(key);
-            }
-          }
+          cleanupExpiredCache();
 
-          // 如果缓存太大，删除最旧的项
+          // 如果缓存太大，删除最旧的项 (LRU策略)
           if (dataCache.size >= MAX_CACHE_SIZE) {
             const oldestKey = Array.from(dataCache.keys())[0];
             dataCache.delete(oldestKey);
+            logger.info(`LRU eviction: removed oldest cache key`);
           }
 
           // 限制缓存的数据条目数，但不限制显示的数据
@@ -247,25 +257,26 @@ const useHomeStore = create<HomeState>((set, get) => ({
       } else {
         set({ hasMore: false });
       }
-    } catch (err: any) {
-      let errorMessage = "加载失败，请重试";
+    } catch (err: unknown) {
+      const ERROR_MAP: Record<string, string> = {
+        'API_URL_NOT_SET': '请前往设置页面配置服务器地址',
+        'UNAUTHORIZED': '认证失败，请重新登录',
+      };
 
-      if (err.message === "API_URL_NOT_SET") {
-        errorMessage = "请前往设置页面配置服务器地址";
-      } else if (err.message === "UNAUTHORIZED") {
-        errorMessage = "认证失败，请重新登录";
+      const error = err as Error;
+      const errorMsg = error?.message || String(err);
+
+      if (errorMsg === 'UNAUTHORIZED') {
         useAuthStore.setState({ isLoggedIn: false, isLoginModalVisible: true });
-      } else if (err.message.includes("Network")) {
-        errorMessage = "网络连接失败，请检查网络连接";
-      } else if (err.message.includes("timeout")) {
-        errorMessage = "请求超时，请检查网络或服务器状态";
-      } else if (err.message.includes("404")) {
-        errorMessage = "服务器API路径不正确，请检查服务器配置";
-      } else if (err.message.includes("500")) {
-        errorMessage = "服务器内部错误，请联系管理员";
-      } else if (err.message.includes("403")) {
-        errorMessage = "访问被拒绝，请检查权限设置";
       }
+
+      const errorMessage = ERROR_MAP[errorMsg]
+        || (errorMsg.includes('Network') ? '网络连接失败，请检查网络连接'
+          : errorMsg.includes('timeout') ? '请求超时，请检查网络或服务器状态'
+            : errorMsg.includes('404') ? '服务器API路径不正确，请检查服务器配置'
+              : errorMsg.includes('500') ? '服务器内部错误，请联系管理员'
+                : errorMsg.includes('403') ? '访问被拒绝，请检查权限设置'
+                  : '加载失败，请重试');
 
       set({ error: errorMessage });
     } finally {
@@ -349,6 +360,12 @@ const useHomeStore = create<HomeState>((set, get) => ({
 
   clearError: () => {
     set({ error: null });
+  },
+
+  clearCache: () => {
+    const cacheSize = dataCache.size;
+    dataCache.clear();
+    logger.info(`Cache cleared. Removed ${cacheSize} entries`);
   },
 }));
 

@@ -3,6 +3,10 @@
  * 监控应用性能，提供优化建议
  */
 
+import Logger from '@/utils/Logger';
+
+const logger = Logger.withTag('PerformanceMonitor');
+
 interface PerformanceMetric {
   name: string;
   startTime: number;
@@ -12,12 +16,12 @@ interface PerformanceMetric {
 
 class PerformanceMonitor {
   private metrics: Map<string, PerformanceMetric> = new Map();
-  private logs: Array<{
+  private logs: {
     type: string;
     message: string;
     timestamp: number;
-    data?: any;
-  }> = [];
+    data?: Record<string, unknown>;
+  }[] = [];
 
   /**
    * 开始性能监控
@@ -49,7 +53,7 @@ class PerformanceMonitor {
   /**
    * 记录日志
    */
-  private log(type: string, message: string, data?: any) {
+  private log(type: string, message: string, data?: Record<string, unknown>) {
     this.logs.push({
       type,
       message,
@@ -115,15 +119,15 @@ interface ErrorContext {
   component?: string;
   action?: string;
   userId?: string;
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
 }
 
 class ErrorHandler {
-  private errors: Array<{
+  private errors: {
     error: Error;
     context: ErrorContext;
     timestamp: number;
-  }> = [];
+  }[] = [];
 
   /**
    * 捕获错误
@@ -144,7 +148,7 @@ class ErrorHandler {
 
     // 开发环境下打印到控制台
     if (__DEV__) {
-      console.error(`[${context.component || 'Unknown'}] ${error.message}`, {
+      logger.error(`[${context.component || 'Unknown'}] ${error.message}`, {
         context,
         stack: error.stack,
       });
@@ -158,9 +162,9 @@ class ErrorHandler {
    * 异步错误处理
    */
   async captureAsync(
-    promise: Promise<any>,
+    promise: Promise<unknown>,
     context: ErrorContext = {}
-  ): Promise<any> {
+  ): Promise<unknown> {
     try {
       return await promise;
     } catch (error) {
@@ -174,11 +178,11 @@ class ErrorHandler {
    */
   getReport(): {
     total: number;
-    recent: Array<{
+    recent: {
       message: string;
       component?: string;
       timestamp: number;
-    }>;
+    }[];
   } {
     return {
       total: this.errors.length,
@@ -228,7 +232,7 @@ class MemoryManager {
       try {
         cleanup();
       } catch (error) {
-        console.error('Cleanup failed:', error);
+        logger.error('Cleanup failed:', error);
       }
     }
     this.subscriptions.clear();
@@ -248,12 +252,9 @@ export const memoryManager = new MemoryManager();
  * 缓存管理工具
  */
 class CacheManager {
-  private cache: Map<string, { data: any; timestamp: number; ttl: number }> = new Map();
+  private cache: Map<string, { data: unknown; timestamp: number; ttl: number }> = new Map();
 
-  /**
-   * 设置缓存
-   */
-  set(key: string, data: any, ttl: number = 5 * 60 * 1000) {
+  set(key: string, data: unknown, ttl: number = 5 * 60 * 1000) {
     this.cache.set(key, {
       data,
       timestamp: Date.now(),

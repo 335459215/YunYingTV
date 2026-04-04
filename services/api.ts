@@ -1,6 +1,8 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { ApiAdapter } from "./apiAdapter";
 
+const DEFAULT_REQUEST_TIMEOUT_MS = 12000;
+
 // region: --- Interface Definitions ---
 export interface DoubanItem {
   title: string;
@@ -90,22 +92,71 @@ export class API {
     this.baseURL = url;
   }
 
-  protected async _fetch(url: string, options: RequestInit = {}): Promise<Response> {
+  protected async _fetch(
+    url: string,
+    options: RequestInit = {},
+    timeoutMs: number = DEFAULT_REQUEST_TIMEOUT_MS,
+  ): Promise<Response> {
     if (!this.baseURL) {
       throw new Error("API_URL_NOT_SET");
     }
 
-    const response = await fetch(`${this.baseURL}${url}`, options);
+    const timeoutController = new AbortController();
+    const requestController = new AbortController();
+    const externalSignal = options.signal;
+    let didTimeout = false;
 
-    if (response.status === 401) {
-      throw new Error("UNAUTHORIZED");
+    const forwardAbort = () => {
+      requestController.abort();
+    };
+
+    if (externalSignal?.aborted) {
+      requestController.abort();
+    } else if (externalSignal) {
+      externalSignal.addEventListener("abort", forwardAbort, { once: true });
     }
 
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
-    }
+    timeoutController.signal.addEventListener("abort", forwardAbort, { once: true });
 
-    return response;
+    const timeoutId = setTimeout(() => {
+      didTimeout = true;
+      timeoutController.abort();
+    }, timeoutMs);
+
+    try {
+      const response = await fetch(`${this.baseURL}${url}`, {
+        ...options,
+        signal: requestController.signal,
+      });
+
+      if (response.status === 401) {
+        throw new Error("UNAUTHORIZED");
+      }
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      return response;
+    } catch (error) {
+      if (requestController.signal.aborted) {
+        if (didTimeout) {
+          throw new Error("Request timeout");
+        }
+
+        if (externalSignal?.aborted) {
+          throw new Error("Request aborted");
+        }
+      }
+
+      throw error;
+    } finally {
+      clearTimeout(timeoutId);
+      if (externalSignal) {
+        externalSignal.removeEventListener("abort", forwardAbort);
+      }
+      timeoutController.signal.removeEventListener("abort", forwardAbort);
+    }
   }
 
   async login(username?: string | undefined, password?: string): Promise<{ ok: boolean }> {
@@ -128,7 +179,7 @@ export class API {
     const response = await this._fetch("/api/logout", {
       method: "POST",
     });
-    await AsyncStorage.setItem("authCookies", '');
+    await AsyncStorage.removeItem("authCookies");
     return response.json();
   }
 
@@ -249,7 +300,7 @@ export class API {
   }
 
   async getVideoDetail(source: string, id: string): Promise<VideoDetail> {
-    const url = `/api/detail?source=${source}&id=${id}`;
+    const url = `/api/detail?source=${encodeURIComponent(source)}&id=${encodeURIComponent(id)}`;
     const response = await this._fetch(url);
     const data = await response.json();
     

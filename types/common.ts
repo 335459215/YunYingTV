@@ -1,7 +1,9 @@
 import type { LucideIcon } from 'lucide-react-native';
 
 export interface TVKeyEvent {
-  eventType: 'up' | 'down' | 'left' | 'right' | 'select' | 'playPause' | 'fastForward' | 'rewind';
+  eventType: 'up' | 'down' | 'left' | 'right' | 'select' | 'playPause' | 'fastForward' | 'rewind'
+    | 'play' | 'menu' | 'back' | 'center'
+    | 'longLeft' | 'longRight';
   eventKeyAction?: number;
 }
 

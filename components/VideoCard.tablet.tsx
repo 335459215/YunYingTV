@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useRef, forwardRef } from "react";
-import { View, Text, Image, StyleSheet, TouchableOpacity, Alert, Animated } from "react-native";
+import { View, Image, StyleSheet, TouchableOpacity, Alert, Animated } from "react-native";
 import { useRouter } from "expo-router";
 import { Star, Play } from "lucide-react-native";
 import { PlayRecordManager } from "@/services/storage";
@@ -117,7 +117,7 @@ const VideoCardTablet = forwardRef<View, VideoCardTabletProps>(
               await PlayRecordManager.remove(source, id);
               onRecordDeleted?.();
             } catch (error) {
-              logger.info("Failed to delete play record:", error);
+              logger.error("Failed to delete play record:", error);
               Alert.alert("错误", "删除观看记录失败，请重试");
             }
           },
@@ -156,7 +156,7 @@ const VideoCardTablet = forwardRef<View, VideoCardTabletProps>(
                 {isContinueWatching ? (
                   <View style={styles.continueWatchingBadge}>
                     <Play size={18} color="#ffffff" fill="#ffffff" />
-                    <Text style={styles.continueWatchingText}>继续观看</Text>
+                    <ThemedText style={styles.continueWatchingText}>继续观看</ThemedText>
                   </View>
                 ) : (
                   <View style={styles.playButton}>
@@ -177,7 +177,7 @@ const VideoCardTablet = forwardRef<View, VideoCardTabletProps>(
             {isContinueWatching && !isPressed && (
               <View style={styles.continueWatchingIndicator}>
                 <Play size={12} color="#ffffff" fill="#ffffff" />
-                <Text style={styles.continueWatchingIndicatorText}>继续</Text>
+                <ThemedText style={styles.continueWatchingIndicatorText}>继续</ThemedText>
               </View>
             )}
 
@@ -185,21 +185,21 @@ const VideoCardTablet = forwardRef<View, VideoCardTabletProps>(
             {rate && (
               <View style={styles.ratingContainer}>
                 <Star size={12} color="#FFD700" fill="#FFD700" />
-                <Text style={styles.ratingText}>{rate}</Text>
+                <ThemedText style={styles.ratingText}>{rate}</ThemedText>
               </View>
             )}
 
             {/* 年份 */}
             {year && (
               <View style={styles.yearBadge}>
-                <Text style={styles.badgeText}>{year}</Text>
+                <ThemedText style={styles.badgeText}>{year}</ThemedText>
               </View>
             )}
 
             {/* 来源 */}
             {sourceName && (
               <View style={styles.sourceNameBadge}>
-                <Text style={styles.badgeText}>{sourceName}</Text>
+                <ThemedText style={styles.badgeText}>{sourceName}</ThemedText>
               </View>
             )}
           </View>

@@ -30,6 +30,7 @@ export const StyledButton = forwardRef<View, StyledButtonProps>(
     const backgroundColor = useThemeColor({}, "background");
     const linkColor = useThemeColor({}, "link");
     const tintColor = useThemeColor({}, "primary");
+    const errorColor = useThemeColor({}, "error");
 
     const isTV = deviceType === "tv";
 
@@ -122,20 +123,20 @@ export const StyledButton = forwardRef<View, StyledButtonProps>(
       },
       danger: {
         button: {
-          backgroundColor: "rgba(255, 0, 0, 0.2)",
+          backgroundColor: "rgba(220, 53, 69, 0.2)",
         },
         text: {
-          color: "#ff4444",
+          color: errorColor,
         },
         focusedButton: {
-          backgroundColor: "rgba(255, 0, 0, 0.3)",
-          borderColor: "#ff4444",
+          backgroundColor: "rgba(220, 53, 69, 0.3)",
+          borderColor: errorColor,
         },
         selectedButton: {
-          backgroundColor: "rgba(255, 0, 0, 0.3)",
+          backgroundColor: "rgba(220, 53, 69, 0.3)",
         },
         selectedText: {
-          color: "#ff4444",
+          color: errorColor,
         },
       },
     };

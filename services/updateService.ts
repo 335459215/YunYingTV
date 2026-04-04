@@ -1,14 +1,14 @@
 // UpdateService.ts
 import * as FileSystem from 'expo-file-system';
 import * as IntentLauncher from 'expo-intent-launcher';
-// import * as Device from 'expo-device';
+import Constants from 'expo-constants';
 import Toast from 'react-native-toast-message';
-import { version as currentVersion } from '../package.json';
 import { UPDATE_CONFIG } from '../constants/UpdateConfig';
 import Logger from '@/utils/Logger';
 import { Platform } from 'react-native';
 
 const logger = Logger.withTag('UpdateService');
+const currentVersion = Constants.expoConfig?.version ?? '0.01';
 
 interface VersionInfo {
   version: string;
@@ -188,15 +188,16 @@ class UpdateService {
           type: ANDROID_MIME_TYPE,   // application/vnd.android.package-archive
           flags,
         });
-      } catch (e: any) {
+      } catch (e: unknown) {
+        const errorMessage = e instanceof Error ? e.message : String(e);
         // 统一错误提示
-        if (e.message?.includes('Activity not found')) {
+        if (errorMessage.includes('Activity not found')) {
           Toast.show({
             type: 'error',
             text1: '安装失败',
             text2: '系统没有找到可以打开 APK 的应用，请检查系统设置',
           });
-        } else if (e.message?.includes('permission')) {
+        } else if (errorMessage.includes('permission')) {
           Toast.show({
             type: 'error',
             text1: '安装失败',

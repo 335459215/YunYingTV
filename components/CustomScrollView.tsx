@@ -4,6 +4,14 @@ import { ThemedText } from "@/components/ThemedText";
 import { useResponsiveLayout } from "@/hooks/useResponsiveLayout";
 import { getCommonResponsiveStyles } from "@/utils/ResponsiveStyles";
 
+function groupItemsByRow<T>(items: T[], columns: number): T[][] {
+  const rows: T[][] = [];
+  for (let i = 0; i < items.length; i += columns) {
+    rows.push(items.slice(i, i + columns));
+  }
+  return rows;
+}
+
 interface CustomScrollViewProps<T> {
   data: T[];
   renderItem: ({ item, index }: { item: T; index: number }) => React.ReactNode;
@@ -30,7 +38,7 @@ const CustomScrollView = <T,>({
   ListFooterComponent,
 }: CustomScrollViewProps<T>) => {
   const scrollViewRef = useRef<ScrollView>(null);
-  const firstCardRef = useRef<TouchableOpacity>(null);
+  const firstCardRef = useRef<{ focus?: () => void } | null>(null);
   const [showScrollToTop, setShowScrollToTop] = useState(false);
   const responsiveConfig = useResponsiveLayout();
   const commonStyles = getCommonResponsiveStyles(responsiveConfig);
@@ -49,10 +57,47 @@ const CustomScrollView = <T,>({
 
       return () => backHandler.remove();
     }
-  }, [showScrollToTop,deviceType]);
+  }, [deviceType, showScrollToTop]);
 
   // 使用响应式列数，如果没有明确指定的话
   const effectiveColumns = numColumns || responsiveConfig.columns;
+
+  const rows = useMemo(() => groupItemsByRow(data, effectiveColumns), [data, effectiveColumns]);
+
+  const dynamicStyles = useMemo(() => StyleSheet.create({
+    listContent: {
+      paddingBottom: responsiveConfig.spacing * 2,
+      paddingHorizontal: responsiveConfig.spacing,
+    },
+    rowContainer: {
+      flexDirection: "row",
+      marginBottom: responsiveConfig.spacing,
+      justifyContent: "flex-start",
+    },
+    fullRowContainer: {
+      justifyContent: "space-between",
+    },
+    partialRowContainer: {
+      justifyContent: "flex-start",
+    },
+    itemContainer: {
+      width: responsiveConfig.cardWidth,
+      marginRight: responsiveConfig.spacing,
+    },
+    lastItemContainer: {
+      width: responsiveConfig.cardWidth,
+      marginRight: 0,
+    },
+    scrollToTopButton: {
+      position: 'absolute',
+      right: responsiveConfig.spacing,
+      bottom: responsiveConfig.spacing * 2,
+      backgroundColor: 'rgba(0, 0, 0, 0.6)',
+      padding: responsiveConfig.spacing,
+      borderRadius: responsiveConfig.spacing,
+      opacity: showScrollToTop ? 1 : 0,
+    },
+  }), [responsiveConfig.spacing, responsiveConfig.cardWidth, showScrollToTop]);
 
   const handleScroll = useCallback(
     ({ nativeEvent }: NativeSyntheticEvent<NativeScrollEvent>) => {
@@ -72,7 +117,7 @@ const CustomScrollView = <T,>({
     scrollViewRef.current?.scrollTo({ y: 0, animated: true });
     // 滚动动画结束后聚焦第一个卡片
     setTimeout(() => {
-      firstCardRef.current?.focus();
+      firstCardRef.current?.focus?.();
     }, 500); // 500ms 适配大多数动画时长
   };
 
@@ -118,51 +163,6 @@ const CustomScrollView = <T,>({
     );
   }
 
-  const groupItemsByRow = (items: T[], columns: number): T[][] => {
-    const rows: T[][] = [];
-    for (let i = 0; i < items.length; i += columns) {
-      rows.push(items.slice(i, i + columns));
-    }
-    return rows;
-  };
-
-  const rows = groupItemsByRow(data, effectiveColumns);
-
-  const dynamicStyles = StyleSheet.create({
-    listContent: {
-      paddingBottom: responsiveConfig.spacing * 2,
-      paddingHorizontal: responsiveConfig.spacing,
-    },
-    rowContainer: {
-      flexDirection: "row",
-      marginBottom: responsiveConfig.spacing,
-      justifyContent: "flex-start",
-    },
-    fullRowContainer: {
-      justifyContent: "space-between",
-    },
-    partialRowContainer: {
-      justifyContent: "flex-start",
-    },
-    itemContainer: {
-      width: responsiveConfig.cardWidth,
-      marginRight: responsiveConfig.spacing,
-    },
-    lastItemContainer: {
-      width: responsiveConfig.cardWidth,
-      marginRight: 0,
-    },
-    scrollToTopButton: {
-      position: 'absolute',
-      right: responsiveConfig.spacing,
-      bottom: responsiveConfig.spacing * 2,
-      backgroundColor: 'rgba(0, 0, 0, 0.6)',
-      padding: responsiveConfig.spacing,
-      borderRadius: responsiveConfig.spacing,
-      opacity: showScrollToTop ? 1 : 0,
-    },
-  });
-
   return (
     <View style={{ flex: 1 }}>
       <ScrollView
@@ -204,7 +204,7 @@ const CustomScrollView = <T,>({
           </View>
         )}
       </ScrollView>
-      {deviceType!=='tv' && (
+      {deviceType !== 'tv' && (
         <TouchableOpacity
           style={dynamicStyles.scrollToTopButton}
           onPress={scrollToTop}

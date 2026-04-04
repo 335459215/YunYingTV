@@ -44,10 +44,12 @@ class HistoryManager {
    */
   public async getContinuationItem(): Promise<ContinuationItem | null> {
     try {
-      const records = await this.getAllPlayRecords();
+      const recordsMap = await PlayRecordManager.getAll();
+      const records = Object.entries(recordsMap)
+        .sort(([, a], [, b]) => (b.save_time || 0) - (a.save_time || 0));
       
       // 筛选未完全观看的记录（观看进度<95%）
-      const unfinishedRecords = records.filter(record => {
+      const unfinishedRecords = records.filter(([, record]) => {
         if (!record.total_time || record.total_time === 0) return false;
         const progress = record.play_time / record.total_time;
         return progress < 0.95;
@@ -59,16 +61,10 @@ class HistoryManager {
       }
       
       // 取第一个未完全观看的记录
-      const firstUnfinished = unfinishedRecords[0];
+      const [recordKey, firstUnfinished] = unfinishedRecords[0];
+      const keyParts = recordKey.split('+');
       
-      // 解析key获取source和id
-      const keyParts = Object.entries(await PlayRecordManager.getAll())
-        .find(([_, record]) => 
-          record.title === firstUnfinished.title && 
-          record.source_name === firstUnfinished.source_name
-        )?.[0]?.split('+');
-      
-      if (!keyParts || keyParts.length < 2) {
+      if (keyParts.length < 2) {
         logger.error('Failed to parse source and id from play record key');
         return null;
       }
@@ -85,8 +81,13 @@ class HistoryManager {
         source_name: firstUnfinished.source_name,
       };
     } catch (error) {
-      logger.error('Failed to get continuation item:', error);
-      return null;
+        const errorMessage = (error as Error).message;
+        if (errorMessage === 'API_URL_NOT_SET') {
+          logger.debug('API not configured, skipping continuation check');
+        } else {
+          logger.error("Failed to get continuation item:", error);
+        }
+        return null;
     }
   }
 

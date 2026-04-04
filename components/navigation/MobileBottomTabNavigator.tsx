@@ -1,10 +1,11 @@
 import React from 'react';
-import { View, StyleSheet, TouchableOpacity, Text, Platform } from 'react-native';
+import { View, StyleSheet, TouchableOpacity, Platform } from 'react-native';
 import { useRouter, usePathname } from 'expo-router';
 import { Home, Search, Heart, Settings, Tv } from 'lucide-react-native';
 import { Colors } from '@/constants/Colors';
 import { useResponsiveLayout } from '@/hooks/useResponsiveLayout';
 import { DeviceUtils } from '@/utils/DeviceUtils';
+import { ThemedText } from '@/components/ThemedText';
 import type { IconComponentType } from '@/types/common';
 
 interface TabItem {
@@ -61,12 +62,12 @@ const MobileBottomTabNavigator: React.FC = () => {
               color={isActive ? Colors.dark.primary : '#888'}
               strokeWidth={isActive ? 2.5 : 2}
             />
-            <Text style={[
+            <ThemedText style={[
               dynamicStyles.tabLabel,
               isActive && dynamicStyles.activeTabLabel
             ]}>
               {tab.label}
-            </Text>
+            </ThemedText>
           </TouchableOpacity>
         );
       })}

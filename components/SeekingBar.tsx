@@ -1,24 +1,14 @@
 import React from "react";
-import { View, StyleSheet, Text } from "react-native";
+import { View, StyleSheet } from "react-native";
 import usePlayerStore from "@/stores/playerStore";
+import { formatTime } from "@/utils/timeUtils";
+import { ThemedText } from "@/components/ThemedText";
 
-const formatTime = (milliseconds: number) => {
-  if (isNaN(milliseconds) || milliseconds < 0) {
-    return "00:00";
-  }
-  const totalSeconds = Math.floor(milliseconds / 1000);
-  const hours = Math.floor(totalSeconds / 3600);
-  const minutes = Math.floor((totalSeconds % 3600) / 60);
-  const seconds = totalSeconds % 60;
-
-  if (hours > 0) {
-    return `${hours.toString().padStart(2, "0")}:${minutes.toString().padStart(2, "0")}:${seconds
-      .toString()
-      .padStart(2, "0")}`;
-  }
-  return `${minutes.toString().padStart(2, "0")}:${seconds.toString().padStart(2, "0")}`;
-};
-
+/**
+ * 播放器进度条组件
+ * 当用户进行进度搜索时显示当前播放位置
+ * @returns {React.ReactElement | null} 进度条组件或null
+ */
 export const SeekingBar = () => {
   const { isSeeking, seekPosition, status } = usePlayerStore();
 
@@ -31,9 +21,9 @@ export const SeekingBar = () => {
 
   return (
     <View style={styles.seekingContainer}>
-      <Text style={styles.timeText}>
+      <ThemedText style={styles.timeText}>
         {formatTime(currentPositionMillis)} / {formatTime(durationMillis)}
-      </Text>
+      </ThemedText>
       <View style={styles.seekingBarContainer}>
         <View style={styles.seekingBarBackground} />
         <View

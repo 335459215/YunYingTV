@@ -8,8 +8,7 @@ import { useButtonAnimation } from "@/hooks/useAnimation";
 import { Colors } from "@/constants/Colors";
 import { useResponsiveLayout } from "@/hooks/useResponsiveLayout";
 import type { TVKeyEvent } from "@/types/common";
-
-const useTVEventHandler = (handler: (event: TVKeyEvent) => void) => {};
+import { useTVEventHandler } from "@/hooks/useTVRemoteHandler";
 
 interface APIConfigSectionProps {
   onChanged: () => void;

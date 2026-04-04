@@ -7,13 +7,13 @@
  * 搜索缓存
  */
 class SearchCache {
-  private cache: Map<string, { data: any; timestamp: number }> = new Map();
+  private cache: Map<string, { data: unknown; timestamp: number }> = new Map();
   private readonly TTL: number = 5 * 60 * 1000; // 5 分钟
 
   /**
    * 获取缓存
    */
-  get(key: string): any | null {
+  get(key: string): unknown | null {
     const item = this.cache.get(key);
     
     if (!item) return null;
@@ -30,7 +30,7 @@ class SearchCache {
   /**
    * 设置缓存
    */
-  set(key: string, data: any): void {
+  set(key: string, data: unknown): void {
     this.cache.set(key, {
       data,
       timestamp: Date.now(),
@@ -114,11 +114,11 @@ export class SmartSearch {
   /**
    * 智能评分
    */
-  static score(item: any, query: string): number {
+  static score(item: Record<string, string | number | undefined>, query: string): number {
     let score = 0;
     
-    const title = (item.title || '').toLowerCase();
-    const desc = (item.desc || item.description || '').toLowerCase();
+    const title = String(item.title || '').toLowerCase();
+    const desc = String(item.desc || item.description || '').toLowerCase();
     const queryLower = query.toLowerCase();
     const queryWords = queryLower.split(/\s+/);
 
@@ -156,11 +156,11 @@ export class SmartSearch {
     }
 
     // 热门度加成（根据年份、评分等）
-    if (item.year && parseInt(item.year) >= 2020) {
+    if (item.year && parseInt(String(item.year)) >= 2020) {
       score += 5;
     }
     
-    if (item.rate && parseFloat(item.rate) >= 8) {
+    if (item.rate && parseFloat(String(item.rate)) >= 8) {
       score += 10;
     }
 
@@ -170,7 +170,7 @@ export class SmartSearch {
   /**
    * 智能搜索并排序
    */
-  static searchAndSort<T extends { title?: string; desc?: string; [key: string]: any }>(
+  static searchAndSort<T extends { title?: string; desc?: string }>(
     items: T[],
     query: string,
     limit: number = 20
@@ -254,11 +254,11 @@ export class SortAlgorithm {
    */
   static multiSort<T>(
     items: T[],
-    criteria: Array<{
+    criteria: {
       key: keyof T;
       order?: 'asc' | 'desc';
       weight?: number;
-    }>
+    }[]
   ): T[] {
     return [...items].sort((a, b) => {
       for (const { key, order = 'asc', weight = 1 } of criteria) {
@@ -354,7 +354,7 @@ export class Deduplication {
    * 按字段去重
    */
   static byField<T>(items: T[], field: keyof T): T[] {
-    const seen = new Set<any>();
+    const seen = new Set<unknown>();
     return items.filter(item => {
       const value = item[field];
       if (seen.has(value)) return false;

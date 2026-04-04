@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
-import { View, FlatList, StyleSheet, ActivityIndicator, Modal, Text } from "react-native";
+import { View, FlatList, StyleSheet, ActivityIndicator, Modal } from "react-native";
 import LivePlayer from "@/components/LivePlayer";
+import { ThemedText } from "@/components/ThemedText";
 import { fetchAndParseM3u, getPlayableUrl, Channel } from "@/services/m3u";
 import { ThemedView } from "@/components/ThemedView";
 import { StyledButton } from "@/components/StyledButton";
@@ -129,7 +130,7 @@ export default function LiveScreen() {
       >
         <View style={dynamicStyles.modalContainer}>
           <View style={dynamicStyles.modalContent}>
-            <Text style={dynamicStyles.modalTitle}>选择频道</Text>
+            <ThemedText style={dynamicStyles.modalTitle}>选择频道</ThemedText>
             <View style={dynamicStyles.listContainer}>
               <View style={dynamicStyles.groupColumn}>
                 <FlatList

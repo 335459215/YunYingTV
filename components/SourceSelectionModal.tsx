@@ -1,6 +1,7 @@
 import React from "react";
-import { View, Text, StyleSheet, Modal, FlatList } from "react-native";
+import { View, StyleSheet, Modal, FlatList } from "react-native";
 import { StyledButton } from "./StyledButton";
+import { ThemedText } from "./ThemedText";
 import useDetailStore from "@/stores/detailStore";
 import usePlayerStore from "@/stores/playerStore";
 import Logger from '@/utils/Logger';
@@ -38,7 +39,7 @@ export const SourceSelectionModal: React.FC = () => {
     <Modal visible={showSourceModal} transparent={true} animationType="slide" onRequestClose={onClose}>
       <View style={styles.modalContainer}>
         <View style={styles.modalContent}>
-          <Text style={styles.modalTitle}>选择播放源</Text>
+          <ThemedText style={styles.modalTitle}>选择播放源</ThemedText>
           <FlatList
             data={searchResults}
             numColumns={3}

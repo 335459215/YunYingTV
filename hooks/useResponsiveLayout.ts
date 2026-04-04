@@ -21,6 +21,7 @@ const BREAKPOINTS = {
   tablet: { min: 768, max: 1023 },
   tv: { min: 1024, max: Infinity },
 };
+const DimensionsApi = Dimensions;
 
 const getDeviceType = (width: number): DeviceType => {
   if (Platform.isTV) return "tv";
@@ -92,16 +93,37 @@ const getLayoutConfig = (
 
 export const useResponsiveLayout = (): ResponsiveConfig => {
   const [dimensions, setDimensions] = useState(() => {
-    const { width, height } = Dimensions.get("window");
+    const { width, height } = DimensionsApi.get("window");
     return { width, height };
   });
 
   useEffect(() => {
-    const subscription = Dimensions.addEventListener("change", ({ window }) => {
-      setDimensions({ width: window.width, height: window.height });
-    });
+    type DimensionChangeHandler = (event: { window: { width: number; height: number } }) => void;
 
-    return () => subscription?.remove();
+    const dimensionsApi = DimensionsApi as typeof DimensionsApi & {
+      removeEventListener?: (type: "change", handler: DimensionChangeHandler) => void;
+    };
+
+    const handleChange: DimensionChangeHandler = ({ window }) => {
+      setDimensions({ width: window.width, height: window.height });
+    };
+
+    if (typeof dimensionsApi.addEventListener !== "function") {
+      return;
+    }
+
+    const subscription = dimensionsApi.addEventListener("change", handleChange);
+
+    return () => {
+      if (typeof subscription?.remove === "function") {
+        subscription.remove();
+        return;
+      }
+
+      if (typeof dimensionsApi.removeEventListener === "function") {
+        dimensionsApi.removeEventListener("change", handleChange);
+      }
+    };
   }, []);
 
   const { width, height } = dimensions;
