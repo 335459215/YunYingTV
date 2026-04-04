@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { View, StyleSheet, TouchableOpacity, Platform, Animated } from 'react-native';
 import { useRouter, usePathname } from 'expo-router';
 import { Home, Search, Heart, Settings, Tv } from 'lucide-react-native';
-import { Colors } from '@/constants/Colors';
+import { Colors, BorderRadius } from '@/constants/Colors';
 import { useResponsiveLayout, useResponsiveStyles } from '@/hooks/useResponsiveLayout';
 import type { IconComponentType } from '@/types/common';
 import { ThemedText } from '@/components/ThemedText';
@@ -26,23 +26,22 @@ interface MobileTabContainerProps {
   children: React.ReactNode;
 }
 
-const MobileTabContainer: React.FC<MobileTabContainerProps> = ({ children }) => {
+const MobileTabContainer = ({ children }: MobileTabContainerProps) => {
   const router = useRouter();
   const pathname = usePathname();
   const { spacing, deviceType } = useResponsiveLayout();
-  const responsiveStyles = useResponsiveStyles();
-  
-  const filteredTabs = tabs.filter(tab => 
+
+  const filteredTabs = tabs.filter(tab =>
     deviceType !== 'mobile' || tab.key !== 'live'
   );
-  
+
   const [tabAnimations] = useState(() => {
     return filteredTabs.reduce((acc, tab) => {
       acc[tab.key] = new Animated.Value(1);
       return acc;
     }, {} as Record<string, Animated.Value>);
   });
-  
+
   const handleTabPress = (route: string, tabKey: string) => {
     Animated.sequence([
       Animated.timing(tabAnimations[tabKey], {
@@ -56,7 +55,7 @@ const MobileTabContainer: React.FC<MobileTabContainerProps> = ({ children }) => 
         useNativeDriver: true,
       }),
     ]).start();
-    
+
     router.push(route as never);
   };
 
@@ -66,19 +65,19 @@ const MobileTabContainer: React.FC<MobileTabContainerProps> = ({ children }) => 
     return false;
   };
 
-  const dynamicStyles = createStyles(spacing, responsiveStyles.minTouchTarget);
+  const dynamicStyles = createStyles(spacing);
 
   return (
     <View style={dynamicStyles.container}>
       <View style={dynamicStyles.content}>
         {children}
       </View>
-      
+
       <View style={dynamicStyles.tabBar}>
         {filteredTabs.map((tab) => {
           const isActive = isTabActive(tab.route);
           const IconComponent = tab.icon;
-          
+
           return (
             <Animated.View
               key={tab.key}
@@ -86,9 +85,7 @@ const MobileTabContainer: React.FC<MobileTabContainerProps> = ({ children }) => 
                 dynamicStyles.tabWrapper,
                 {
                   transform: [
-                    {
-                      scale: tabAnimations[tab.key],
-                    },
+                    { scale: tabAnimations[tab.key] },
                   ],
                 },
               ]}
@@ -97,15 +94,14 @@ const MobileTabContainer: React.FC<MobileTabContainerProps> = ({ children }) => 
                 style={[dynamicStyles.tab, isActive && dynamicStyles.activeTab]}
                 onPress={() => handleTabPress(tab.route, tab.key)}
                 activeOpacity={0.7}
-                accessibilityLabel={tab.label}
-                accessibilityRole="button"
-                accessibilityState={{ selected: isActive }}
               >
-                <IconComponent
-                  size={isActive ? 22 : 20}
-                  color={isActive ? Colors.dark.primary : '#888'}
-                  strokeWidth={isActive ? 2.5 : 2}
-                />
+                <View style={[dynamicStyles.iconCircle, isActive && dynamicStyles.activeIconCircle]}>
+                  <IconComponent
+                    size={22}
+                    color={isActive ? Colors.dark.primary : Colors.dark.textTertiary}
+                    strokeWidth={isActive ? 2.2 : 1.6}
+                  />
+                </View>
                 <ThemedText style={[
                   dynamicStyles.tabLabel,
                   isActive && dynamicStyles.activeTabLabel
@@ -121,60 +117,54 @@ const MobileTabContainer: React.FC<MobileTabContainerProps> = ({ children }) => 
   );
 };
 
-const createStyles = (spacing: number, minTouchTarget: number) => {
-  return StyleSheet.create({
-    container: {
-      flex: 1,
-    },
-    content: {
-      flex: 1,
-    },
-    tabBar: {
-      flexDirection: 'row',
-      backgroundColor: '#1c1c1e',
-      borderTopWidth: 1,
-      borderTopColor: '#333',
-      paddingTop: spacing / 2,
-      paddingBottom: Platform.OS === 'ios' ? spacing * 2 : spacing,
-      paddingHorizontal: spacing,
-      shadowColor: '#000',
-      shadowOffset: {
-        width: 0,
-        height: -2,
-      },
-      shadowOpacity: 0.1,
-      shadowRadius: 4,
-      elevation: 10,
-    },
-    tabWrapper: {
-      flex: 1,
-      alignItems: 'center',
-      justifyContent: 'center',
-    },
-    tab: {
-      flex: 1,
-      alignItems: 'center',
-      justifyContent: 'center',
-      minHeight: minTouchTarget,
-      paddingVertical: spacing / 2,
-      paddingHorizontal: spacing / 2,
-      borderRadius: 12,
-      width: '100%',
-    },
-    activeTab: {
-      backgroundColor: 'rgba(64, 156, 255, 0.1)',
-    },
-    tabLabel: {
-      fontSize: 11,
-      color: '#888',
-      marginTop: 4,
-      fontWeight: '500',
-    },
-    activeTabLabel: {
-      color: Colors.dark.primary,
-      fontWeight: '600',
-    },
-  });
-};
+const createStyles = (spacing: number) => StyleSheet.create({
+  container: {
+    flex: 1,
+  },
+  content: {
+    flex: 1,
+  },
+  tabBar: {
+    flexDirection: 'row',
+    backgroundColor: 'transparent',
+    paddingTop: spacing * 0.4,
+    paddingBottom: Platform.OS === 'ios' ? spacing * 2 : spacing + 8,
+    paddingHorizontal: spacing * 1.2,
+  },
+  tabWrapper: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  tab: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: spacing * 0.25,
+    paddingHorizontal: spacing * 0.4,
+    borderRadius: BorderRadius.lg,
+  },
+  activeTab: {},
+  iconCircle: {
+    width: 44,
+    height: 36,
+    borderRadius: BorderRadius.md,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 2,
+  },
+  activeIconCircle: {
+    backgroundColor: 'rgba(0, 201, 107, 0.10)',
+  },
+  tabLabel: {
+    fontSize: 11,
+    color: Colors.dark.textTertiary,
+    fontWeight: '500',
+    letterSpacing: 0.15,
+  },
+  activeTabLabel: {
+    color: Colors.dark.primary,
+    fontWeight: '700',
+  },
+});
 
 export default MobileTabContainer;

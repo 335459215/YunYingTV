@@ -2,7 +2,7 @@ import React from 'react';
 import { View, StyleSheet, TouchableOpacity, Platform } from 'react-native';
 import { useRouter, usePathname } from 'expo-router';
 import { Home, Search, Heart, Settings, Tv } from 'lucide-react-native';
-import { Colors, Shadows, BorderRadius } from '@/constants/Colors';
+import { Colors, BorderRadius } from '@/constants/Colors';
 import { useResponsiveLayout } from '@/hooks/useResponsiveLayout';
 import { DeviceUtils } from '@/utils/DeviceUtils';
 import { ThemedText } from '@/components/ThemedText';
@@ -23,7 +23,7 @@ const tabs: TabItem[] = [
   { key: 'settings', label: '设置', icon: Settings, route: '/settings' },
 ];
 
-const MobileBottomTabNavigator: React.FC = () => {
+const MobileBottomTabNavigator = () => {
   const router = useRouter();
   const pathname = usePathname();
   const { spacing, deviceType } = useResponsiveLayout();
@@ -46,35 +46,35 @@ const MobileBottomTabNavigator: React.FC = () => {
 
   return (
     <View style={dynamicStyles.container}>
-      <View style={dynamicStyles.indicatorBar} />
-      {filteredTabs.map((tab) => {
-        const isActive = isTabActive(tab.route);
-        const IconComponent = tab.icon;
+      <View style={dynamicStyles.tabRow}>
+        {filteredTabs.map((tab) => {
+          const isActive = isTabActive(tab.route);
+          const IconComponent = tab.icon;
 
-        return (
-          <TouchableOpacity
-            key={tab.key}
-            style={[dynamicStyles.tab, isActive && dynamicStyles.activeTab]}
-            onPress={() => handleTabPress(tab.route)}
-            activeOpacity={0.7}
-          >
-            <View style={[dynamicStyles.iconWrapper, isActive && dynamicStyles.activeIconWrapper]}>
-              <IconComponent
-                size={20}
-                color={isActive ? Colors.dark.primary : Colors.dark.textTertiary}
-                strokeWidth={isActive ? 2.5 : 1.8}
-              />
-              {isActive && <View style={dynamicStyles.activeDot} />}
-            </View>
-            <ThemedText style={[
-              dynamicStyles.tabLabel,
-              isActive && dynamicStyles.activeTabLabel
-            ]}>
-              {tab.label}
-            </ThemedText>
-          </TouchableOpacity>
-        );
-      })}
+          return (
+            <TouchableOpacity
+              key={tab.key}
+              style={dynamicStyles.tab}
+              onPress={() => handleTabPress(tab.route)}
+              activeOpacity={0.7}
+            >
+              <View style={[dynamicStyles.iconCircle, isActive && dynamicStyles.activeIconCircle]}>
+                <IconComponent
+                  size={22}
+                  color={isActive ? Colors.dark.primary : Colors.dark.textTertiary}
+                  strokeWidth={isActive ? 2.2 : 1.6}
+                />
+              </View>
+              <ThemedText style={[
+                dynamicStyles.tabLabel,
+                isActive && dynamicStyles.activeTabLabel,
+              ]}>
+                {tab.label}
+              </ThemedText>
+            </TouchableOpacity>
+          );
+        })}
+      </View>
     </View>
   );
 };
@@ -84,62 +84,45 @@ const createStyles = (spacing: number) => {
 
   return StyleSheet.create({
     container: {
-      flexDirection: 'row',
-      backgroundColor: Colors.dark.surfaceElevated,
-      borderTopWidth: 0.5,
-      borderTopColor: Colors.dark.border,
-      paddingTop: spacing * 0.4,
-      paddingBottom: Platform.OS === 'ios' ? spacing * 2 : spacing + 4,
-      paddingHorizontal: spacing * 0.6,
-      ...Shadows.dark.lg,
-      shadowOffset: { width: 0, height: -3 },
+      paddingBottom: Platform.OS === 'ios' ? spacing * 2 : spacing + 8,
+      paddingTop: spacing * 0.5,
+      paddingHorizontal: spacing * 0.8,
+      backgroundColor: 'transparent',
     },
-    indicatorBar: {
-      position: 'absolute',
-      top: 0,
-      left: 0,
-      right: 0,
-      height: Platform.select({ ios: 34, android: 24 }),
-      backgroundColor: Colors.dark.surfaceElevated,
+    tabRow: {
+      flexDirection: 'row',
+      justifyContent: 'space-around',
+      alignItems: 'center',
     },
     tab: {
-      flex: 1,
+      flex: 0,
       alignItems: 'center',
       justifyContent: 'center',
-      minHeight: minTouchTarget,
-      paddingVertical: spacing * 0.35,
+      minWidth: minTouchTarget + 12,
+      paddingVertical: spacing * 0.3,
+      paddingHorizontal: spacing * 0.5,
+      borderRadius: BorderRadius.lg,
+    },
+    iconCircle: {
+      width: 44,
+      height: 36,
       borderRadius: BorderRadius.md,
-      position: 'relative',
-    },
-    activeTab: {
-      backgroundColor: Colors.dark.focusGlow,
-    },
-    iconWrapper: {
-      position: 'relative',
       alignItems: 'center',
       justifyContent: 'center',
-      paddingVertical: 2,
+      marginBottom: 2,
     },
-    activeIconWrapper: {},
-    activeDot: {
-      position: 'absolute',
-      bottom: -2,
-      width: 4,
-      height: 4,
-      borderRadius: 2,
-      backgroundColor: Colors.dark.primary,
+    activeIconCircle: {
+      backgroundColor: 'rgba(0, 201, 107, 0.10)',
     },
     tabLabel: {
-      fontSize: 10,
+      fontSize: 11,
       color: Colors.dark.textTertiary,
-      marginTop: 2,
       fontWeight: '500',
-      letterSpacing: 0.2,
+      letterSpacing: 0.15,
     },
     activeTabLabel: {
       color: Colors.dark.primary,
       fontWeight: '700',
-      fontSize: 10.5,
     },
   });
 };
