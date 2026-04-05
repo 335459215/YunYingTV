@@ -82,7 +82,7 @@ export const ThemeSection: React.FC<ThemeSectionProps> = React.memo(({ onChanged
             >
               <View style={styles.iconWrapper}>
                 <IconComponent
-                  size={deviceType === 'tv' ? 32 : 24}
+                  size={deviceType === 'tv' ? 26 : 20}
                   color={isSelected ? primaryColor : '#8B919A'}
                   strokeWidth={isSelected ? 2.5 : 2}
                 />
@@ -115,56 +115,56 @@ ThemeSection.displayName = 'ThemeSection';
 
 const styles = StyleSheet.create({
   container: {
-    marginBottom: 20,
+    marginBottom: 16,
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 12,
+    marginBottom: 10,
   },
   optionsContainer: {
     flexDirection: 'row',
-    gap: 10,
+    gap: 8,
   },
   optionCard: {
     flex: 1,
-    padding: 14,
-    borderRadius: 12,
+    padding: 10,
+    borderRadius: 10,
     borderWidth: 1.5,
     alignItems: 'center',
     position: 'relative',
-    minHeight: 110,
+    minHeight: 85,
     justifyContent: 'center',
   },
   iconWrapper: {
-    marginBottom: 8,
+    marginBottom: 6,
   },
   optionLabel: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '600' as const,
-    marginBottom: 4,
+    marginBottom: 2,
     textAlign: 'center',
   },
   optionDesc: {
-    fontSize: 11,
+    fontSize: 10,
     textAlign: 'center',
     opacity: 0.7,
-    lineHeight: 15,
+    lineHeight: 13,
   },
   selectedBadge: {
     position: 'absolute',
-    top: 6,
-    right: 6,
-    width: 20,
-    height: 20,
-    borderRadius: 10,
+    top: 4,
+    right: 4,
+    width: 18,
+    height: 18,
+    borderRadius: 9,
     justifyContent: 'center',
     alignItems: 'center',
   },
   selectedText: {
     color: '#FFFFFF',
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: 'bold',
   },
 });

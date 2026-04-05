@@ -12,13 +12,13 @@ import Toast from "react-native-toast-message";
 interface LoginSectionProps {
   onChanged: () => void;
   onFocus?: () => void;
+  onLoginSuccess?: () => void;
 }
 
-export const LoginSection: React.FC<LoginSectionProps> = React.memo(({ onChanged, onFocus }) => {
-  const { currentServer, currentAccount, serverConfig } = useSettingsStore();
-  const { checkLoginStatus } = useAuthStore();
+export const LoginSection: React.FC<LoginSectionProps> = React.memo(({ onChanged, onFocus, onLoginSuccess }) => {
+  const { currentServer, serverConfig } = useSettingsStore();
   const { refreshPlayRecords } = useHomeStore();
-  const [username, setUsername] = useState(currentAccount?.username || "");
+  const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const passwordInputRef = useRef<TextInput>(null);
@@ -37,11 +37,20 @@ export const LoginSection: React.FC<LoginSectionProps> = React.memo(({ onChanged
     setIsLoading(true);
     try {
       await api.login(isLocalStorage ? undefined : username, password);
-      await checkLoginStatus(currentServer.url);
-      await refreshPlayRecords();
-
-      Toast.show({ type: "success", text1: "登录成功" });
-      Keyboard.dismiss();
+      
+      const authState = useAuthStore.getState();
+      await authState.checkLoginStatus(currentServer.url);
+      
+      if (useAuthStore.getState().isLoggedIn) {
+        await refreshPlayRecords();
+        Toast.show({ type: "success", text1: "登录成功" });
+        Keyboard.dismiss();
+        setPassword("");
+        onLoginSuccess?.();
+        onChanged();
+      } else {
+        Toast.show({ type: "error", text1: "登录失败，请检查账号密码" });
+      }
     } catch (error) {
       Toast.show({
         type: "error",

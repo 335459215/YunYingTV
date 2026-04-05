@@ -10,7 +10,6 @@ import { AutoContinueSection } from "@/components/settings/AutoContinueSection";
 import { LiveStreamSection, LiveStreamSectionRef } from "@/components/settings/LiveStreamSection";
 import { RemoteInputSection } from "@/components/settings/RemoteInputSection";
 import { ServerManagerSection } from "@/components/settings/ServerManagerSection";
-import { AccountManagerSection } from "@/components/settings/AccountManagerSection";
 import { LoginSection } from "@/components/settings/LoginSection";
 import { UpdateSection } from "@/components/settings/UpdateSection";
 import { ThemeSection } from "@/components/settings/ThemeSection";
@@ -150,22 +149,10 @@ export default function SettingsScreen() {
     },
     {
       component: (
-        <AccountManagerSection
-          onChanged={markAsChanged}
-          onFocus={() => {
-            setCurrentFocusIndex(4);
-            setCurrentSection("account");
-          }}
-        />
-      ),
-      key: "account",
-    },
-    {
-      component: (
         <LoginSection
           onChanged={markAsChanged}
           onFocus={() => {
-            setCurrentFocusIndex(5);
+            setCurrentFocusIndex(4);
             setCurrentSection("login");
           }}
         />
