@@ -25,6 +25,7 @@ env:
   NODE_VERSION: '20'
   JAVA_VERSION: '17'
   GRADLE_OPTS: "-Xmx6g -XX:MaxMetaspaceSize=2g -Dorg.gradle.daemon=false -Dorg.gradle.parallel=true -Dorg.gradle.caching=true"
+  ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION: true
 
 jobs:
   # Job 1: 代码质量检查
@@ -209,14 +210,6 @@ jobs:
           fail_on_unmatched_files: false
           generate_release_notes: false
           make_latest: true
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Release summary
-        run: |
-          echo "✅ Release created successfully!"
-          echo "📦 Version: v${{ steps.app_version.outputs.VERSION }}"
-          echo "🔗 URL: https://github.com/${{ github.repository }}/releases/tag/v${{ steps.app_version.outputs.VERSION }}"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
