@@ -205,6 +205,9 @@ export default React.memo(function HomeScreen() {
             </Pressable>
           </View>
           <View style={dynamicStyles.mobileHeaderRight}>
+            <Pressable style={dynamicStyles.iconButton} onPress={() => router.push("/favorites")}>
+              <Heart size={20} color={theme === "light" ? "#0D1117" : "#F0F2F5"} />
+            </Pressable>
             <Pressable style={dynamicStyles.iconButton} onPress={() => router.push("/history")}>
               <Clock size={20} color={theme === "light" ? "#0D1117" : "#F0F2F5"} />
             </Pressable>
