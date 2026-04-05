@@ -1,13 +1,10 @@
-/**
- * Learn more about light and dark modes:
- * https://docs.expo.dev/guides/color-schemes/
- */
-
 import {Colors} from '@/constants/Colors';
+import {useSettingsStore} from '@/stores/settingsStore';
 
-type ColorName = keyof typeof Colors.dark;
+type CommonColorName = keyof typeof Colors.light & keyof typeof Colors.dark & keyof typeof Colors.glass;
+type ThemeMode = 'light' | 'dark' | 'glass';
 
-const variantToColorMap: Record<string, ColorName> = {
+const variantToColorMap: Record<string, CommonColorName> = {
   background: 'background',
   surface: 'surface',
   surfaceElevated: 'surfaceElevated',
@@ -18,35 +15,40 @@ const variantToColorMap: Record<string, ColorName> = {
 };
 
 export function useThemeColor(
-  props: {light?: string; dark?: string},
+  props: {light?: string; dark?: string; glass?: string},
   colorName: string,
 ) {
-  const theme = 'dark';
+  const theme = useSettingsStore((state) => state.theme) as ThemeMode;
   const colorFromProps = props[theme];
 
   if (colorFromProps) {
     return colorFromProps;
   }
 
-  const mappedColor = variantToColorMap[colorName] as ColorName;
-  if (mappedColor && Colors.dark[mappedColor]) {
-    return Colors.dark[mappedColor];
+  const mappedColor = variantToColorMap[colorName] as CommonColorName;
+  if (mappedColor && Colors[theme]?.[mappedColor]) {
+    return (Colors[theme] as Record<string, string>)[mappedColor];
   }
 
-  return Colors.dark[colorName as ColorName] ?? Colors.dark.text;
+  return (Colors[theme] as Record<string, string>)[colorName] ?? Colors.dark.text;
 }
 
 export function useThemeColorWithVariant(
-  props: {light?: string; dark?: string},
-  colorName: keyof typeof Colors.light & keyof typeof Colors.dark,
-  variant?: 'light' | 'dark'
+  props: {light?: string; dark?: string; glass?: string},
+  colorName: CommonColorName,
+  variant?: ThemeMode
 ) {
-  const theme = variant || 'dark';
+  const currentTheme = useSettingsStore((state) => state.theme) as ThemeMode;
+  const theme = variant || currentTheme;
   const colorFromProps = props[theme];
 
   if (colorFromProps) {
     return colorFromProps;
   } else {
-    return Colors[theme][colorName];
+    return Colors[theme][colorName] ?? Colors.dark.text;
   }
+}
+
+export function useCurrentTheme() {
+  return useSettingsStore((state) => state.theme) as ThemeMode;
 }

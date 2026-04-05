@@ -14,6 +14,7 @@ interface SettingsState {
   autoContinuePlayback: boolean; // 自动续播开关
   autoSpeedTest: boolean; // 自动测速开关
   autoSwitchSource: boolean; // 自动切换低延迟数据源开关
+  theme: "dark" | "light" | "glass"; // 主题模式
   videoSource: {
     enabledAll: boolean;
     sources: {
@@ -39,6 +40,7 @@ interface SettingsState {
   setAutoSwitchSource: (enabled: boolean) => void;
   saveSettings: () => Promise<void>;
   setVideoSource: (config: { enabledAll: boolean; sources: { [key: string]: boolean } }) => void;
+  setTheme: (theme: "dark" | "light" | "glass") => void;
   showModal: () => void;
   hideModal: () => void;
   // 服务器管理方法
@@ -62,6 +64,7 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
   autoContinuePlayback: true, // 默认开启自动续播
   autoSpeedTest: true, // 默认开启自动测速
   autoSwitchSource: true, // 默认开启自动切换低延迟数据源
+  theme: "dark", // 默认深色主题
   isModalVisible: false,
   serverConfig: null,
   isLoadingServerConfig: false,
@@ -198,6 +201,10 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
   setAutoSpeedTest: (enabled) => set({ autoSpeedTest: enabled }),
   setAutoSwitchSource: (enabled) => set({ autoSwitchSource: enabled }),
   setVideoSource: (config) => set({ videoSource: config }),
+  setTheme: (theme) => {
+    set({ theme });
+    AsyncStorage.setItem("app_theme", theme).catch(() => {});
+  },
   saveSettings: async () => {
     const { apiBaseUrl, m3uUrl, remoteInputEnabled, autoContinuePlayback, autoSpeedTest, autoSwitchSource, videoSource } = get();
     const currentSettings = await SettingsManager.get();

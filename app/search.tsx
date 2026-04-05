@@ -12,7 +12,6 @@ import { RemoteControlModal } from "@/components/RemoteControlModal";
 import { useSettingsStore } from "@/stores/settingsStore";
 import { useRouter } from "expo-router";
 import { Colors } from "@/constants/Colors";
-import CustomScrollView from "@/components/CustomScrollView";
 import { useResponsiveLayout } from "@/hooks/useResponsiveLayout";
 import { getCommonResponsiveStyles } from "@/utils/ResponsiveStyles";
 import ResponsiveNavigation from "@/components/navigation/ResponsiveNavigation";
@@ -27,6 +26,7 @@ const logger = Logger.withTag('SearchScreen');
 
 export default React.memo(function SearchScreen() {
   const [keyword, setKeyword] = useState("");
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [results, setResults] = useState<SearchResult[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -99,6 +99,7 @@ export default React.memo(function SearchScreen() {
     showRemoteModal('search');
   }, [remoteInputEnabled, showRemoteModal, router]);
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const renderItem = useCallback(({ item, index }: { item: SearchResult; index: number }) => (
     <ListItemAnimation index={index} delay={30}>
       <VideoCard

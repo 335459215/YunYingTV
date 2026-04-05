@@ -6,6 +6,7 @@ import { useButtonAnimation } from "@/hooks/useAnimation";
 import { useResponsiveLayout } from "@/hooks/useResponsiveLayout";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import { useTextStyles } from "@/hooks/useTextStyles";
+import { useSettingsStore } from "@/stores/settingsStore";
 
 interface StyledButtonProps extends PressableProps {
   children?: React.ReactNode;
@@ -23,12 +24,19 @@ export const StyledButton = React.memo(forwardRef<View, StyledButtonProps>(
     const animationStyle = useButtonAnimation(isFocused);
     const { deviceType } = useResponsiveLayout();
     const textStyles = useTextStyles();
+    const theme = useSettingsStore((state) => state.theme);
 
     const textColor = useThemeColor({}, "text");
     const primaryColor = useThemeColor({}, "primary");
     const tintColor = useThemeColor({}, "primary");
     const errorColor = useThemeColor({}, "error");
     const ghostBg = useThemeColor({}, "buttonGhost");
+    const surfaceElevated = Colors[theme]?.surfaceElevated ?? Colors.dark.surfaceElevated;
+    const borderStrong = Colors[theme]?.borderStrong ?? Colors.dark.borderStrong;
+    const borderFocus = Colors[theme]?.borderFocus ?? Colors.dark.borderFocus;
+    const focusGlow = Colors[theme]?.focusGlow ?? Colors.dark.focusGlow;
+    const border = Colors[theme]?.border ?? Colors.dark.border;
+    const pressedOverlay = Colors[theme]?.pressedOverlay ?? Colors.dark.pressedOverlay;
 
     const isTV = deviceType === "tv";
 
@@ -53,8 +61,8 @@ export const StyledButton = React.memo(forwardRef<View, StyledButtonProps>(
     const variantStyles = {
       default: {
         button: {
-          backgroundColor: Colors.dark.surfaceElevated,
-          borderColor: Colors.dark.borderStrong,
+          backgroundColor: surfaceElevated,
+          borderColor: borderStrong,
         },
         text: {
           color: textColor,
@@ -63,8 +71,8 @@ export const StyledButton = React.memo(forwardRef<View, StyledButtonProps>(
           backgroundColor: primaryColor,
         },
         focusedButton: {
-          borderColor: Colors.dark.borderFocus,
-          backgroundColor: Colors.dark.focusGlow,
+          borderColor: borderFocus,
+          backgroundColor: focusGlow,
         },
         selectedText: {
           color: "#ffffff",
@@ -99,8 +107,8 @@ export const StyledButton = React.memo(forwardRef<View, StyledButtonProps>(
           color: textColor,
         },
         focusedButton: {
-          backgroundColor: Colors.dark.focusGlow,
-          borderColor: Colors.dark.borderFocus,
+          backgroundColor: focusGlow,
+          borderColor: borderFocus,
         },
         selectedButton: {},
         selectedText: {},
@@ -108,17 +116,17 @@ export const StyledButton = React.memo(forwardRef<View, StyledButtonProps>(
       secondary: {
         button: {
           backgroundColor: ghostBg,
-          borderColor: Colors.dark.border,
+          borderColor: border,
         },
         text: {
           color: textColor,
         },
         focusedButton: {
-          backgroundColor: Colors.dark.pressedOverlay,
-          borderColor: Colors.dark.borderFocus,
+          backgroundColor: pressedOverlay,
+          borderColor: borderFocus,
         },
         selectedButton: {
-          backgroundColor: Colors.dark.pressedOverlay,
+          backgroundColor: pressedOverlay,
         },
         selectedText: {
           color: textColor,
@@ -159,8 +167,8 @@ export const StyledButton = React.memo(forwardRef<View, StyledButtonProps>(
         minHeight: isTV ? 56 : 44,
       },
       focusedButton: {
-        backgroundColor: Colors.dark.focusGlow,
-        borderColor: Colors.dark.borderFocus,
+        backgroundColor: focusGlow,
+        borderColor: borderFocus,
         ...Shadows.dark.focus,
       },
       selectedButton: {

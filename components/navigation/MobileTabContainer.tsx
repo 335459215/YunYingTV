@@ -2,8 +2,9 @@ import React, { useState } from 'react';
 import { View, StyleSheet, TouchableOpacity, Platform, Animated } from 'react-native';
 import { useRouter, usePathname } from 'expo-router';
 import { Home, Search, Heart, Settings, Tv } from 'lucide-react-native';
-import { Colors, BorderRadius } from '@/constants/Colors';
-import { useResponsiveLayout, useResponsiveStyles } from '@/hooks/useResponsiveLayout';
+import { BorderRadius } from '@/constants/Colors';
+import { useResponsiveLayout } from '@/hooks/useResponsiveLayout';
+import { useThemeColor } from '@/hooks/useThemeColor';
 import type { IconComponentType } from '@/types/common';
 import { ThemedText } from '@/components/ThemedText';
 
@@ -30,6 +31,8 @@ const MobileTabContainer = ({ children }: MobileTabContainerProps) => {
   const router = useRouter();
   const pathname = usePathname();
   const { spacing, deviceType } = useResponsiveLayout();
+  const primaryColor = useThemeColor({}, 'primary');
+  const textTertiary = useThemeColor({}, 'textTertiary');
 
   const filteredTabs = tabs.filter(tab =>
     deviceType !== 'mobile' || (tab.key !== 'live' && tab.key !== 'search')
@@ -65,7 +68,7 @@ const MobileTabContainer = ({ children }: MobileTabContainerProps) => {
     return false;
   };
 
-  const dynamicStyles = createStyles(spacing);
+  const dynamicStyles = createStyles(spacing, primaryColor, textTertiary);
 
   return (
     <View style={dynamicStyles.container}>
@@ -98,7 +101,7 @@ const MobileTabContainer = ({ children }: MobileTabContainerProps) => {
                 <View style={[dynamicStyles.iconCircle, isActive && dynamicStyles.activeIconCircle]}>
                   <IconComponent
                     size={22}
-                    color={isActive ? Colors.dark.primary : Colors.dark.textTertiary}
+                    color={isActive ? primaryColor : textTertiary}
                     strokeWidth={isActive ? 2.2 : 1.6}
                   />
                 </View>
@@ -117,7 +120,7 @@ const MobileTabContainer = ({ children }: MobileTabContainerProps) => {
   );
 };
 
-const createStyles = (spacing: number) => StyleSheet.create({
+const createStyles = (spacing: number, primaryColor: string, textTertiary: string) => StyleSheet.create({
   container: {
     flex: 1,
   },
@@ -157,12 +160,12 @@ const createStyles = (spacing: number) => StyleSheet.create({
   },
   tabLabel: {
     fontSize: 11,
-    color: Colors.dark.textTertiary,
+    color: textTertiary,
     fontWeight: '500',
     letterSpacing: 0.15,
   },
   activeTabLabel: {
-    color: Colors.dark.primary,
+    color: primaryColor,
     fontWeight: '700',
   },
 });

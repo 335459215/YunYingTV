@@ -208,6 +208,7 @@ export const Colors = {
 
     border: borderLight,
     borderStrong: borderStrongLight,
+    borderFocus: "rgba(0, 201, 107, 0.40)",
 
     success: successLight,
     warning: warningLight,
@@ -283,11 +284,58 @@ export const Colors = {
     focusGlow: focusRingGlow,
     pressedOverlay: pressedOverlayDark,
   },
+  glass: {
+    primary: primaryDark,
+    primaryHover: primaryHoverDark,
+    secondary: secondaryDark,
+    tertiary: tertiaryDark,
+
+    background: "rgba(10, 11, 13, 0.75)",
+    surface: "rgba(17, 18, 20, 0.6)",
+    surfaceElevated: "rgba(24, 25, 28, 0.5)",
+    surfaceOverlay: "rgba(255, 255, 255, 0.04)",
+
+    text: "#F0F2F5",
+    textSecondary: "#8B919A",
+    textTertiary: "#5C6270",
+    textDisabled: "#4A4E56",
+
+    border: "rgba(255, 255, 255, 0.10)",
+    borderStrong: "rgba(255, 255, 255, 0.16)",
+    borderFocus: "rgba(0, 201, 107, 0.50)",
+
+    success: successDark,
+    warning: warningDark,
+    error: errorDark,
+    info: infoDark,
+
+    tabIconDefault: tabIconDefaultDark,
+    tabIconSelected: tabIconSelectedDark,
+
+    card: "rgba(21, 22, 26, 0.55)",
+    cardElevated: "rgba(28, 29, 33, 0.5)",
+    cardHover: "rgba(26, 27, 31, 0.5)",
+
+    buttonPrimary: buttonPrimaryDark,
+    buttonSecondary: buttonSecondaryDark,
+    buttonGhost: "rgba(255, 255, 255, 0.06)",
+    buttonDisabled: buttonDisabledDark,
+
+    inputBackground: "rgba(24, 25, 28, 0.4)",
+    inputBorder: "rgba(255, 255, 255, 0.08)",
+    inputBorderFocused: inputBorderFocusedDark,
+
+    link: secondaryDark,
+
+    focusRing: focusRingColor,
+    focusGlow: focusRingGlow,
+    pressedOverlay: pressedOverlayDark,
+  },
 };
 
 export const getColor = (
   colorName: keyof typeof Colors.dark,
-  mode: "light" | "dark" = "dark"
+  mode: "light" | "dark" | "glass" = "dark"
 ) => {
   const colorMap = Colors[mode];
   if (colorName in colorMap) {

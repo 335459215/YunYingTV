@@ -26,7 +26,6 @@ const LOAD_MORE_THRESHOLD = 200;
 
 export default React.memo(function HomeScreen() {
   const router = useRouter();
-  const colorScheme = "dark";
   const [selectedTag, setSelectedTag] = useState<string | null>(null);
   const insets = useSafeAreaInsets();
   const [refreshing, setRefreshing] = useState(false);
@@ -51,7 +50,7 @@ export default React.memo(function HomeScreen() {
   } = useHomeStore();
   const { isLoggedIn, logout } = useAuthStore();
   const apiConfigStatus = useApiConfig();
-  const { servers, currentServer, setActiveServer, loadServers } = useSettingsStore();
+  const { servers, currentServer, setActiveServer, loadServers, theme } = useSettingsStore();
 
   const isTV = deviceType === "tv";
   const hasServer = apiConfigStatus.isConfigured && !apiConfigStatus.needsConfiguration;
@@ -181,7 +180,7 @@ export default React.memo(function HomeScreen() {
     if (!loadingMore) return null;
     return (
       <View style={styles.loadMoreContainer}>
-        <ActivityIndicator size="large" color={Colors.dark.primary} />
+        <ActivityIndicator size="large" color={Colors[theme]?.primary ?? Colors.dark.primary} />
         <ThemedText style={styles.loadMoreText}>加载更多...</ThemedText>
       </View>
     );
@@ -196,18 +195,18 @@ export default React.memo(function HomeScreen() {
               style={[dynamicStyles.serverBadge, hasMultipleServers && dynamicStyles.serverBadgeMulti]}
               onPress={() => hasMultipleServers ? setShowServerMenu(!showServerMenu) : router.push("/settings")}
             >
-              <ServerIcon size={14} color={hasServer ? Colors.dark.primary : Colors.dark.textTertiary} />
+              <ServerIcon size={14} color={hasServer ? (Colors[theme]?.primary ?? Colors.dark.primary) : (Colors[theme]?.textTertiary ?? Colors.dark.textTertiary)} />
               <ThemedText style={[dynamicStyles.serverBadgeText, !hasServer && dynamicStyles.serverBadgeTextInactive]}>
                 {currentServer?.name || (hasServer ? "已连接" : "未连接")}
               </ThemedText>
               {(hasMultipleServers || !hasServer) && (
-                <ChevronDown size={12} color={Colors.dark.textTertiary} />
+                <ChevronDown size={12} color={Colors[theme]?.textTertiary ?? Colors.dark.textTertiary} />
               )}
             </Pressable>
           </View>
           <View style={dynamicStyles.mobileHeaderRight}>
             <Pressable style={dynamicStyles.iconButton} onPress={() => router.push("/search")}>
-              <Search size={20} color={colorScheme === "dark" ? "#F0F2F5" : "#000"} />
+              <Search size={20} color={theme === "light" ? "#0D1117" : "#F0F2F5"} />
             </Pressable>
           </View>
 
@@ -225,7 +224,7 @@ export default React.memo(function HomeScreen() {
                 >
                   <View style={[
                     dynamicStyles.dropdownDot,
-                    currentServer?.id === server.id && { backgroundColor: Colors.dark.primary },
+                    currentServer?.id === server.id && { backgroundColor: Colors[theme]?.primary ?? Colors.dark.primary },
                   ]} />
                   <ThemedText style={[
                     dynamicStyles.dropdownItemText,
@@ -255,13 +254,13 @@ export default React.memo(function HomeScreen() {
               style={dynamicStyles.tvServerButton}
               onPress={() => setShowServerMenu(!showServerMenu)}
             >
-              <ServerIcon size={isTV ? 18 : 16} color={Colors.dark.primary} />
+              <ServerIcon size={isTV ? 18 : 16} color={Colors[theme]?.primary ?? Colors.dark.primary} />
               <ThemedText style={dynamicStyles.tvServerName}>{currentServer?.name || "服务器"}</ThemedText>
-              <ChevronDown size={14} color={Colors.dark.textSecondary} />
+              <ChevronDown size={14} color={Colors[theme]?.textSecondary ?? Colors.dark.textSecondary} />
             </Pressable>
           )}
           <View style={styles.logoIconContainer}>
-            <Tv size={isTV ? 32 : 24} color={Colors.dark.primary} />
+            <Clapperboard size={isTV ? 32 : 24} color={Colors[theme]?.primary ?? Colors.dark.primary} />
           </View>
           <ThemedText style={dynamicStyles.appName}>云影TV</ThemedText>
         </View>
@@ -276,21 +275,21 @@ export default React.memo(function HomeScreen() {
           </Pressable>
           <View style={dynamicStyles.rightHeaderButtons}>
             <StyledButton style={dynamicStyles.iconButton} onPress={() => router.push("/favorites")} variant="ghost">
-              <Heart color={colorScheme === "dark" ? "#F0F2F5" : "#000"} size={isTV ? 28 : 24} />
+              <Heart color={theme === "light" ? "#0D1117" : "#F0F2F5"} size={isTV ? 28 : 24} />
             </StyledButton>
             <StyledButton
               style={dynamicStyles.iconButton}
               onPress={() => router.push({ pathname: "/search" })}
               variant="ghost"
             >
-              <Search color={colorScheme === "dark" ? "#F0F2F5" : "#000"} size={isTV ? 28 : 24} />
+              <Search color={theme === "light" ? "#0D1117" : "#F0F2F5"} size={isTV ? 28 : 24} />
             </StyledButton>
             <StyledButton style={dynamicStyles.iconButton} onPress={() => router.push("/settings")} variant="ghost">
-              <Settings color={colorScheme === "dark" ? "#F0F2F5" : "#000"} size={isTV ? 28 : 24} />
+              <Settings color={theme === "light" ? "#0D1117" : "#F0F2F5"} size={isTV ? 28 : 24} />
             </StyledButton>
             {isLoggedIn && (
               <StyledButton style={dynamicStyles.iconButton} onPress={logout} variant="ghost">
-                <LogOut color={colorScheme === "dark" ? "#F0F2F5" : "#000"} size={isTV ? 28 : 24} />
+                <LogOut color={theme === "light" ? "#0D1117" : "#F0F2F5"} size={isTV ? 28 : 24} />
               </StyledButton>
             )}
           </View>
@@ -302,7 +301,7 @@ export default React.memo(function HomeScreen() {
   const dynamicStyles = useMemo(() => StyleSheet.create({
     container: {
       flex: 1,
-      backgroundColor: Colors.dark.background,
+      backgroundColor: Colors[theme]?.background ?? Colors.dark.background,
       paddingTop: 36,
     },
     mobileHeader: {
@@ -316,7 +315,7 @@ export default React.memo(function HomeScreen() {
       paddingHorizontal: spacing,
       height: insets.top + 36,
       paddingTop: Math.max(0, insets.top - 32),
-      backgroundColor: Colors.dark.background,
+      backgroundColor: Colors[theme]?.background ?? Colors.dark.background,
     },
     mobileHeaderLeft: {
       flexDirection: "row",
@@ -330,24 +329,24 @@ export default React.memo(function HomeScreen() {
     serverBadge: {
       flexDirection: "row",
       alignItems: "center",
-      backgroundColor: Colors.dark.card,
+      backgroundColor: Colors[theme]?.card ?? Colors.dark.card,
       borderRadius: BorderRadius.full,
       paddingHorizontal: 10,
       paddingVertical: 5,
       borderWidth: 1,
-      borderColor: Colors.dark.border,
+      borderColor: Colors[theme]?.border ?? Colors.dark.border,
     },
     serverBadgeMulti: {
-      borderColor: Colors.dark.borderStrong,
+      borderColor: Colors[theme]?.borderStrong ?? Colors.dark.borderStrong,
     },
     serverBadgeText: {
       fontSize: 12,
       fontWeight: "600",
-      color: Colors.dark.primary,
+      color: Colors[theme]?.primary ?? Colors.dark.primary,
       marginHorizontal: 4,
     },
     serverBadgeTextInactive: {
-      color: Colors.dark.textTertiary,
+      color: Colors[theme]?.textTertiary ?? Colors.dark.textTertiary,
     },
     iconButton: {
       padding: 6,
@@ -359,10 +358,10 @@ export default React.memo(function HomeScreen() {
       top: "100%",
       left: spacing,
       marginTop: 4,
-      backgroundColor: Colors.dark.surfaceElevated,
+      backgroundColor: Colors[theme]?.surfaceElevated ?? Colors.dark.surfaceElevated,
       borderRadius: BorderRadius.lg,
       borderWidth: 1,
-      borderColor: Colors.dark.borderStrong,
+      borderColor: Colors[theme]?.borderStrong ?? Colors.dark.borderStrong,
       ...Shadows.dark.lg,
       zIndex: 100,
       minWidth: 180,
@@ -374,10 +373,10 @@ export default React.memo(function HomeScreen() {
       left: 20,
       width: 16,
       height: 16,
-      backgroundColor: Colors.dark.surfaceElevated,
+      backgroundColor: Colors[theme]?.surfaceElevated ?? Colors.dark.surfaceElevated,
       borderTopWidth: 1,
       borderLeftWidth: 1,
-      borderColor: Colors.dark.borderStrong,
+      borderColor: Colors[theme]?.borderStrong ?? Colors.dark.borderStrong,
       transform: [{ rotate: "45deg" }],
     },
     dropdownItem: {
@@ -387,43 +386,43 @@ export default React.memo(function HomeScreen() {
       paddingVertical: 11,
     },
     dropdownItemActive: {
-      backgroundColor: Colors.dark.focusGlow,
+      backgroundColor: Colors[theme]?.focusGlow ?? Colors.dark.focusGlow,
     },
     dropdownDot: {
       width: 7,
       height: 7,
       borderRadius: 3.5,
-      backgroundColor: Colors.dark.textTertiary,
+      backgroundColor: Colors[theme]?.textTertiary ?? Colors.dark.textTertiary,
       marginRight: 10,
     },
     dropdownItemText: {
       fontSize: 14,
-      color: Colors.dark.text,
+      color: Colors[theme]?.text ?? Colors.dark.text,
     },
     dropdownItemTextActive: {
-      color: Colors.dark.primary,
+      color: Colors[theme]?.primary ?? Colors.dark.primary,
       fontWeight: "600",
     },
     dropdownItemAdd: {
       fontSize: 13,
-      color: Colors.dark.primary,
+      color: Colors[theme]?.primary ?? Colors.dark.primary,
       fontWeight: "600",
     },
     tvServerButton: {
       flexDirection: "row",
       alignItems: "center",
-      backgroundColor: Colors.dark.surfaceElevated,
+      backgroundColor: Colors[theme]?.surfaceElevated ?? Colors.dark.surfaceElevated,
       borderRadius: BorderRadius.md,
       paddingHorizontal: 12,
       paddingVertical: 8,
       marginRight: 12,
       borderWidth: 1,
-      borderColor: Colors.dark.border,
+      borderColor: Colors[theme]?.border ?? Colors.dark.border,
     },
     tvServerName: {
       fontSize: 13,
       fontWeight: "600",
-      color: Colors.dark.text,
+      color: Colors[theme]?.text ?? Colors.dark.text,
       marginHorizontal: 6,
     },
     headerContainer: {
@@ -441,7 +440,7 @@ export default React.memo(function HomeScreen() {
     appName: {
       fontSize: isTV ? 32 : 22,
       fontWeight: "800",
-      color: Colors.dark.primary,
+      color: Colors[theme]?.primary ?? Colors.dark.primary,
       marginLeft: 12,
       letterSpacing: 1,
     },
@@ -453,13 +452,13 @@ export default React.memo(function HomeScreen() {
       marginRight: spacing,
     },
     liveButtonInner: {
-      backgroundColor: Colors.dark.primary,
+      backgroundColor: Colors[theme]?.primary ?? Colors.dark.primary,
       paddingHorizontal: isTV ? 28 : 18,
       paddingVertical: isTV ? 14 : 10,
       borderRadius: isTV ? 14 : 10,
       borderWidth: 2,
       borderColor: "transparent",
-      shadowColor: Colors.dark.primary,
+      shadowColor: Colors[theme]?.primary ?? Colors.dark.primary,
       shadowOffset: { width: 0, height: 4 },
       shadowOpacity: 0.4,
       shadowRadius: 12,
@@ -547,7 +546,7 @@ export default React.memo(function HomeScreen() {
       lineHeight: 22,
       marginBottom: spacing * 2,
     },
-  }), [deviceType, spacing, insets, isTV]);
+  }), [deviceType, spacing, insets, isTV, theme]);
 
   const renderCategory = useCallback(({ item }: { item: Category }) => {
     const isSelected = selectedCategory?.title === item.title;
@@ -614,7 +613,13 @@ export default React.memo(function HomeScreen() {
       style={[commonStyles.container, dynamicStyles.container]}
       onTouchEnd={handleDoubleTapRefresh}
     >
-      {deviceType === "mobile" && <StatusBar barStyle="light-content" backgroundColor="#0A0B0D" />}
+      {deviceType === "mobile" && (
+        <StatusBar
+          barStyle={theme === "light" ? "dark-content" : "light-content"}
+          backgroundColor={theme === "light" ? "#FAFBFC" : "#0A0B0D"}
+          translucent={theme === "glass"}
+        />
+      )}
 
       {renderHeader()}
 

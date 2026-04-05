@@ -16,6 +16,7 @@ import { useUpdateStore, initUpdateStore } from "@/stores/updateStore";
 import { UpdateModal } from "@/components/UpdateModal";
 import { UPDATE_CONFIG } from "@/constants/UpdateConfig";
 import { useResponsiveLayout } from "@/hooks/useResponsiveLayout";
+import { useThemeColor } from "@/hooks/useThemeColor";
 import historyManager, { ContinuationItem } from "@/services/historyManager";
 import Logger from '@/utils/Logger';
 
@@ -60,16 +61,16 @@ const withTimeout = async <T,>(
 };
 
 export default function RootLayout() {
-  const colorScheme = "dark";
   const navigationState = useRootNavigationState();
   const [isAppReady, setIsAppReady] = useState(false);
   const [initialRouteHandled, setInitialRouteHandled] = useState(false);
   const [pendingContinuation, setPendingContinuation] = useState<ContinuationItem | null>(null);
-  const { loadSettings, remoteInputEnabled, apiBaseUrl } = useSettingsStore();
+  const { loadSettings, remoteInputEnabled, apiBaseUrl, theme } = useSettingsStore();
   const { startServer, stopServer } = useRemoteControlStore();
   const { checkLoginStatus } = useAuthStore();
   const { checkForUpdate, lastCheckTime } = useUpdateStore();
   const responsiveConfig = useResponsiveLayout();
+  const backgroundColor = useThemeColor({}, 'background');
 
   useEffect(() => {
     let isMounted = true;
@@ -188,6 +189,13 @@ export default function RootLayout() {
   }, [checkForUpdate, isAppReady, lastCheckTime]);
 
   useEffect(() => {
+    if (Platform.OS === "android" && theme) {
+      const bg = Colors[theme]?.background ?? Colors.dark.background;
+      SystemUI.setBackgroundColorAsync(bg).catch(() => {});
+    }
+  }, [theme]);
+
+  useEffect(() => {
     // 只有在非手机端才启动远程控制服务器
     if (remoteInputEnabled && responsiveConfig.deviceType !== "mobile") {
       startServer();
@@ -198,9 +206,9 @@ export default function RootLayout() {
 
   return (
     <SafeAreaProvider>
-      <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
-        <View style={styles.container}>
-          <Stack screenOptions={{ safeAreaInsets: { top: false } }}>
+      <ThemeProvider value={theme === "light" ? DefaultTheme : DarkTheme}>
+        <View style={[styles.container, { backgroundColor }]}>
+          <Stack>
             <Stack.Screen name="index" options={{ headerShown: false }} />
             <Stack.Screen name="detail" options={{ headerShown: false }} />
             {Platform.OS !== "web" && <Stack.Screen name="play" options={{ headerShown: false }} />}
@@ -222,6 +230,5 @@ export default function RootLayout() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.dark.background,
   },
 });

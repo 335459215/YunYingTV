@@ -13,6 +13,7 @@ import { ServerManagerSection } from "@/components/settings/ServerManagerSection
 import { AccountManagerSection } from "@/components/settings/AccountManagerSection";
 import { LoginSection } from "@/components/settings/LoginSection";
 import { UpdateSection } from "@/components/settings/UpdateSection";
+import { ThemeSection } from "@/components/settings/ThemeSection";
 import ResponsiveNavigation from "@/components/navigation/ResponsiveNavigation";
 import ResponsiveHeader from "@/components/navigation/ResponsiveHeader";
 import { useThemeColor } from "@/hooks/useThemeColor";
@@ -125,10 +126,22 @@ export default function SettingsScreen() {
     },
     {
       component: (
-        <ServerManagerSection
+        <ThemeSection
           onChanged={markAsChanged}
           onFocus={() => {
             setCurrentFocusIndex(2);
+            setCurrentSection("theme");
+          }}
+        />
+      ),
+      key: "theme",
+    },
+    {
+      component: (
+        <ServerManagerSection
+          onChanged={markAsChanged}
+          onFocus={() => {
+            setCurrentFocusIndex(3);
             setCurrentSection("server");
           }}
         />
@@ -140,7 +153,7 @@ export default function SettingsScreen() {
         <AccountManagerSection
           onChanged={markAsChanged}
           onFocus={() => {
-            setCurrentFocusIndex(3);
+            setCurrentFocusIndex(4);
             setCurrentSection("account");
           }}
         />
@@ -152,7 +165,7 @@ export default function SettingsScreen() {
         <LoginSection
           onChanged={markAsChanged}
           onFocus={() => {
-            setCurrentFocusIndex(4);
+            setCurrentFocusIndex(5);
             setCurrentSection("login");
           }}
         />
@@ -165,7 +178,7 @@ export default function SettingsScreen() {
           ref={liveStreamSectionRef}
           onChanged={markAsChanged}
           onFocus={() => {
-            setCurrentFocusIndex(6);
+            setCurrentFocusIndex(7);
             setCurrentSection("livestream");
           }}
         />
