@@ -303,7 +303,7 @@ export default React.memo(function HomeScreen() {
     container: {
       flex: 1,
       backgroundColor: Colors.dark.background,
-      paddingTop: insets.top + 44,
+      paddingTop: 36,
     },
     mobileHeader: {
       position: "absolute",
@@ -312,13 +312,11 @@ export default React.memo(function HomeScreen() {
       right: 0,
       flexDirection: "row",
       justifyContent: "space-between",
-      alignItems: "center",
+      alignItems: "flex-start",
       paddingHorizontal: spacing,
-      height: insets.top + 44,
-      paddingTop: Math.max(0, (insets.top - 28)),
-      backgroundColor: Colors.dark.surfaceElevated,
-      borderBottomWidth: StyleSheet.hairlineWidth,
-      borderBottomColor: Colors.dark.border,
+      height: insets.top + 36,
+      paddingTop: Math.max(0, insets.top - 32),
+      backgroundColor: Colors.dark.background,
     },
     mobileHeaderLeft: {
       flexDirection: "row",
