@@ -614,7 +614,7 @@ export default React.memo(function HomeScreen() {
       style={[commonStyles.container, dynamicStyles.container]}
       onTouchEnd={handleDoubleTapRefresh}
     >
-      {deviceType === "mobile" && <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />}
+      {deviceType === "mobile" && <StatusBar barStyle="light-content" backgroundColor="#0A0B0D" />}
 
       {renderHeader()}
 
