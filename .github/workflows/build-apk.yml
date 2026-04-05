@@ -17,6 +17,9 @@ permissions:
   packages: write
   actions: write
 
+env:
+  NODE_VERSION: '24'
+
 jobs:
   build:
     name: Build APK
@@ -32,7 +35,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
 
       - name: Install dependencies
@@ -44,24 +47,28 @@ jobs:
 
       - name: Make gradlew executable
         run: |
-          echo "🔨 Making gradlew executable..."
+          echo "Making gradlew executable..."
           chmod +x android/gradlew
 
       - name: Build APK
         run: npm run build
         env:
-          GRADLE_OPTS: "-Xmx4g -XX:MaxMetaspaceSize=1g"
+          GRADLE_OPTS: "-Xmx6g -XX:MaxMetaspaceSize=2g -Dorg.gradle.daemon=false -Dorg.gradle.parallel=true"
 
       - name: Verify APK
         run: |
-          echo "📦 Verifying APK..."
-          ls -lh android/app/build/outputs/apk/release/ || echo "No APK found"
+          echo "Verifying APK..."
+          if [ ! -f "android/app/build/outputs/apk/release/app-release.apk" ]; then
+            echo "::error::APK build failed"
+            exit 1
+          fi
+          ls -lh android/app/build/outputs/apk/release/
 
       - name: Prepare APK
         run: |
           mkdir -p release
           cp android/app/build/outputs/apk/release/app-release.apk release/YunYingTV-v${{ steps.build_version.outputs.VERSION }}.apk
-          echo "✅ APK ready: release/YunYingTV-v${{ steps.build_version.outputs.VERSION }}.apk"
+          echo "APK ready: release/YunYingTV-v${{ steps.build_version.outputs.VERSION }}.apk"
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
@@ -73,27 +80,23 @@ jobs:
       - name: Create Release
         if: github.event.inputs.create_release == 'true'
         timeout-minutes: 10
-        uses: softprops/action-gh-release@v2
-        with:
-          tag_name: v${{ steps.build_version.outputs.VERSION }}
-          name: Release v${{ steps.build_version.outputs.VERSION }}
-          body: |
-            ## YunYingTV v${{ steps.build_version.outputs.VERSION }}
-            
-            Automated build from GitHub Actions
-            
-            ### Features
-            - Build APK with GitHub Actions
-            - Fixed Android native asset sync
-            - Version baseline reset to 0.01
-            
-            ### Changes
-            - Built directly from committed android project
-          draft: false
-          prerelease: false
-          files: release/*.apk
-          fail_on_unmatched_files: false
-          generate_release_notes: true
-          make_latest: true
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          VERSION="${{ steps.build_version.outputs.VERSION }}"
+          TAG="v${VERSION}"
+          
+          gh release create "${TAG}" \
+            --repo "${{ github.repository }}" \
+            --title "Release ${TAG}" \
+            --notes "## YunYingTV v${VERSION}
+
+          Automated build from GitHub Actions
+
+          ### Changes
+          - Built directly from committed android project
+          - Node.js ${{ env.NODE_VERSION }} + JDK 17" \
+            release/*.apk || {
+            echo "::warning::Release may already exist, updating..."
+            gh release upload "${TAG}" --clobber release/*.apk || true
+          }
