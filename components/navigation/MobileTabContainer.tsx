@@ -32,7 +32,7 @@ const MobileTabContainer = ({ children }: MobileTabContainerProps) => {
   const { spacing, deviceType } = useResponsiveLayout();
 
   const filteredTabs = tabs.filter(tab =>
-    deviceType !== 'mobile' || tab.key !== 'live'
+    deviceType !== 'mobile' || (tab.key !== 'live' && tab.key !== 'search')
   );
 
   const [tabAnimations] = useState(() => {

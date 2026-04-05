@@ -6,7 +6,7 @@ import { ThemedText } from "@/components/ThemedText";
 import { api } from "@/services/api";
 import VideoCard from "@/components/VideoCard";
 import { useFocusEffect, useRouter } from "expo-router";
-import { Search, Settings, LogOut, Heart, Tv, Server as ServerIcon, ChevronDown } from "lucide-react-native";
+import { Search, Settings, LogOut, Heart, Clapperboard, Server as ServerIcon, ChevronDown } from "lucide-react-native";
 import { StyledButton } from "@/components/StyledButton";
 import useHomeStore, { RowItem, Category } from "@/stores/homeStore";
 import useAuthStore from "@/stores/authStore";
@@ -510,13 +510,24 @@ export default React.memo(function HomeScreen() {
       justifyContent: "center",
     },
     iconGlowRing: {
-      width: 80,
-      height: 80,
-      borderRadius: 40,
-      backgroundColor: "rgba(0, 201, 107, 0.08)",
+      width: 72,
+      height: 72,
+      borderRadius: 36,
+      backgroundColor: "rgba(0, 201, 107, 0.06)",
       alignItems: "center",
       justifyContent: "center",
       marginBottom: spacing * 2,
+    },
+    emptyIconWrapper: {
+      width: 72,
+      height: 72,
+      borderRadius: 36,
+      backgroundColor: "rgba(255, 255, 255, 0.03)",
+      borderWidth: 1,
+      borderColor: "rgba(255, 255, 255, 0.06)",
+      alignItems: "center",
+      justifyContent: "center",
+      marginBottom: spacing * 2.5,
     },
     emptyStateTitle: {
       fontSize: 22,
@@ -586,8 +597,9 @@ export default React.memo(function HomeScreen() {
 
   const renderEmptyState = () => (
     <View style={dynamicStyles.emptyStateContainer}>
-      <View style={dynamicStyles.iconGlowRing} />
-      <Tv size={52} color={Colors.dark.primary} strokeWidth={1.2} />
+      <View style={dynamicStyles.emptyIconWrapper}>
+        <Clapperboard size={42} color={Colors.dark.primary} strokeWidth={1.4} />
+      </View>
       <ThemedText style={dynamicStyles.emptyStateTitle}>欢迎使用云影TV</ThemedText>
       <ThemedText style={dynamicStyles.emptyStateDesc}>请先添加视频源服务器地址，即可开始浏览精彩内容</ThemedText>
       <StyledButton text="前往设置" onPress={() => router.push("/settings")} variant="primary" style={{ minWidth: 160 }} />

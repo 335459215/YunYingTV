@@ -200,7 +200,7 @@ export default function RootLayout() {
     <SafeAreaProvider>
       <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
         <View style={styles.container}>
-          <Stack>
+          <Stack screenOptions={{ safeAreaInsets: { top: false } }}>
             <Stack.Screen name="index" options={{ headerShown: false }} />
             <Stack.Screen name="detail" options={{ headerShown: false }} />
             {Platform.OS !== "web" && <Stack.Screen name="play" options={{ headerShown: false }} />}

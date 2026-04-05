@@ -159,13 +159,13 @@ export default React.memo(function SearchScreen() {
           <ThemedText style={dynamicStyles.errorText}>{error}</ThemedText>
         </View>
       ) : (
-        <CustomScrollView
-          data={results}
-          renderItem={renderItem}
-          loading={loading}
-          error={error}
-          emptyMessage="输入关键词开始搜索"
-        />
+        <View style={[commonStyles.center, { flex: 1, paddingHorizontal: spacing * 3 }]}>
+          <View style={dynamicStyles.emptyIconContainer}>
+            <Search size={48} color={Colors.dark.textTertiary} strokeWidth={1.2} />
+          </View>
+          <ThemedText style={dynamicStyles.emptyTitle}>搜索视频内容</ThemedText>
+          <ThemedText style={dynamicStyles.emptyDesc}>输入关键词开始搜索电影、剧集等精彩内容</ThemedText>
+        </View>
       )}
       <RemoteControlModal />
     </FadeIn>
@@ -241,6 +241,28 @@ const createResponsiveStyles = (deviceType: string, spacing: number) => {
       color: "red",
       fontSize: isMobile ? 14 : 16,
       textAlign: "center",
+    },
+    emptyIconContainer: {
+      width: 88,
+      height: 88,
+      borderRadius: 44,
+      backgroundColor: "rgba(255, 255, 255, 0.04)",
+      alignItems: "center",
+      justifyContent: "center",
+      marginBottom: spacing * 2,
+    },
+    emptyTitle: {
+      fontSize: isMobile ? 18 : 22,
+      fontWeight: "700",
+      color: Colors.dark.text,
+      textAlign: "center",
+      marginBottom: spacing * 0.5,
+    },
+    emptyDesc: {
+      fontSize: isMobile ? 13 : 15,
+      color: Colors.dark.textSecondary,
+      textAlign: "center",
+      lineHeight: 20,
     },
   });
 };
