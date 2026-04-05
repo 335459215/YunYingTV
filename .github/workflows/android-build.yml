@@ -135,6 +135,8 @@ jobs:
     permissions:
       contents: write
     timeout-minutes: 10
+    env:
+      ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION: true
 
     steps:
       - name: Checkout code
@@ -156,16 +158,15 @@ jobs:
           BASE_VERSION=$(node -p "require('./app.json').expo.version")
           echo "Base version from app.json: ${BASE_VERSION}"
 
-          LATEST_RELEASE=$(curl -s -H "Authorization: token ${GH_TOKEN}" \
-            "https://api.github.com/repos/${{ github.repository }}/releases?per_page=1" | \
-            node -p "try { const r = JSON.parse(require('fs').readFileSync('/dev/stdin','utf8')); r[0]?.tag_name?.replace('v','') || '${BASE_VERSION}' } catch(e) { '${BASE_VERSION}' }")
+          LATEST_RELEASE=$(gh api repos/${{ github.repository }}/releases?per_page=1 \
+            --jq '.[0].tag_name // empty' | tr -d 'v')
 
           echo "Latest release version: ${LATEST_RELEASE}"
 
           NEW_VERSION=$(node -e "
             const base = '${BASE_VERSION}';
-            const latest = '${LATEST_RELEASE}';
-            let ver = (latest > base) ? latest : base;
+            const latest = '${LATEST_RELEASE}' || base;
+            let ver = (!latest || latest <= base) ? base : latest;
             const parts = ver.split('.');
             parts[parts.length - 1] = (parseFloat(parts[parts.length - 1]) + 0.01).toFixed(2).replace(/\.?0+$/, '');
             console.log(parts.join('.'));
@@ -198,23 +199,31 @@ jobs:
           echo "- Build time: $(date -u '+%Y-%m-%d %H:%M UTC')" >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT
 
-      - name: Create Release
-        uses: softprops/action-gh-release@v2
-        with:
-          tag_name: v${{ steps.app_version.outputs.VERSION }}
-          name: Release v${{ steps.app_version.outputs.VERSION }}
-          body: ${{ steps.changelog.outputs.CHANGELOG }}
-          draft: false
-          prerelease: false
-          files: release/*.apk
-          fail_on_unmatched_files: false
-          generate_release_notes: false
-          make_latest: true
+      - name: Create Release via gh CLI
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Release summary
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          echo "✅ Release created successfully!"
-          echo "📦 Version: v${{ steps.app_version.outputs.VERSION }}"
-          echo "🔗 URL: https://github.com/${{ github.repository }}/releases/tag/v${{ steps.app_version.outputs.VERSION }}"
+          set -e
+          VERSION="${{ steps.app_version.outputs.VERSION }}"
+          TAG="v${VERSION}"
+          
+          echo "Creating release ${TAG}..."
+          
+          gh release create "${TAG}" \
+            --repo "${{ github.repository }}" \
+            --title "Release ${TAG}" \
+            --notes "${{ steps.changelog.outputs.CHANGELOG }}" \
+            release/*.apk \
+            --verify-tag || {
+            
+            echo "::warning::Release ${TAG} may already exist, attempting update..."
+            gh release upload "${TAG}" \
+              --repo "${{ github.repository }}" \
+              --clobber \
+              release/*.apk || true
+          }
+          
+          echo ""
+          echo "✅ Release created/updated successfully!"
+          echo "📦 Version: ${TAG}"
+          echo "🔗 https://github.com/${{ github.repository }}/releases/tag/${TAG}"
