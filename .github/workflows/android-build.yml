@@ -147,9 +147,31 @@ jobs:
           name: release-apk
           path: release/
 
-      - name: Read app version
+      - name: Auto-increment version from existing releases
         id: app_version
-        run: echo "VERSION=$(node -p "require('./app.json').expo.version")" >> $GITHUB_OUTPUT
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          BASE_VERSION=$(node -p "require('./app.json').expo.version")
+          echo "Base version from app.json: ${BASE_VERSION}"
+
+          LATEST_RELEASE=$(curl -s -H "Authorization: token ${GH_TOKEN}" \
+            "https://api.github.com/repos/${{ github.repository }}/releases?per_page=1" | \
+            node -p "try { const r = JSON.parse(require('fs').readFileSync('/dev/stdin','utf8')); r[0]?.tag_name?.replace('v','') || '${BASE_VERSION}' } catch(e) { '${BASE_VERSION}' }")
+
+          echo "Latest release version: ${LATEST_RELEASE}"
+
+          NEW_VERSION=$(node -e "
+            const base = '${BASE_VERSION}';
+            const latest = '${LATEST_RELEASE}';
+            let ver = (latest > base) ? latest : base;
+            const parts = ver.split('.');
+            parts[parts.length - 1] = (parseFloat(parts[parts.length - 1]) + 0.01).toFixed(2).replace(/\.?0+$/, '');
+            console.log(parts.join('.'));
+          ")
+
+          echo "New release version: ${NEW_VERSION}"
+          echo "VERSION=${NEW_VERSION}" >> $GITHUB_OUTPUT
 
       - name: Generate changelog
         id: changelog
@@ -159,13 +181,15 @@ jobs:
           echo "" >> $GITHUB_OUTPUT
           echo "### ✨ 新功能" >> $GITHUB_OUTPUT
           echo "- 多主题系统：支持深色、浅色、透明三种模式" >> $GITHUB_OUTPUT
-          echo "- 设置页新增主题切换UI组件" >> $GITHUB_OUTPUT
-          echo "- 主题选择持久化存储" >> $GITHUB_OUTPUT
+          echo "- 历史记录页面：观看历史、分类筛选、进度显示" >> $GITHUB_OUTPUT
+          echo "- 收藏页优化：分类筛选 + 操作按钮行" >> $GITHUB_OUTPUT
+          echo "- 底部导航精简：首页|直播|设置" >> $GITHUB_OUTPUT
           echo "" >> $GITHUB_OUTPUT
           echo "### 🔧 优化改进" >> $GITHUB_OUTPUT
-          echo "- 全局组件适配动态主题系统" >> $GITHUB_OUTPUT
+          echo "- 全局组件适配动态主题系统 (dark/light/glass)" >> $GITHUB_OUTPUT
           echo "- 修复所有硬编码颜色值问题" >> $GITHUB_OUTPUT
           echo "- StatusBar/SystemUI 背景色动态响应" >> $GITHUB_OUTPUT
+          echo "- 首页 header 新增收藏+历史记录快捷入口" >> $GITHUB_OUTPUT
           echo "" >> $GITHUB_OUTPUT
           echo "### 📱 构建信息" >> $GITHUB_OUTPUT
           echo "- Commit: \`${{ github.sha }}\`" >> $GITHUB_OUTPUT
@@ -185,6 +209,14 @@ jobs:
           fail_on_unmatched_files: false
           generate_release_notes: false
           make_latest: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Release summary
+        run: |
+          echo "✅ Release created successfully!"
+          echo "📦 Version: v${{ steps.app_version.outputs.VERSION }}"
+          echo "🔗 URL: https://github.com/${{ github.repository }}/releases/tag/v${{ steps.app_version.outputs.VERSION }}"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
