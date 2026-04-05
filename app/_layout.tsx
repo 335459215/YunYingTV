@@ -1,6 +1,7 @@
 import { DarkTheme, DefaultTheme, ThemeProvider } from "@react-navigation/native";
 import { Stack, router, useRootNavigationState } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
+import * as SystemUI from "expo-system-ui";
 import { useEffect, useState } from "react";
 import { Platform, View, StyleSheet } from "react-native";
 import Toast from "react-native-toast-message";
@@ -25,6 +26,13 @@ const APP_BOOT_TIMEOUT_MS = 8000;
 SplashScreen.preventAutoHideAsync().catch(() => {
   logger.warn("Splash screen was already prevented from auto-hiding");
 });
+
+// Set system UI background color for edge-to-edge display on Android
+if (Platform.OS === "android") {
+  SystemUI.setBackgroundColorAsync(Colors.dark.background).catch((error) => {
+    logger.warn("Failed to set system UI background:", error);
+  });
+}
 
 const withTimeout = async <T,>(
   promise: Promise<T>,
