@@ -6,7 +6,7 @@ import { ThemedText } from "@/components/ThemedText";
 import { api } from "@/services/api";
 import VideoCard from "@/components/VideoCard";
 import { useFocusEffect, useRouter } from "expo-router";
-import { Search, Settings, LogOut, Heart, Clapperboard, Server as ServerIcon, ChevronDown } from "lucide-react-native";
+import { Search, Settings, LogOut, Heart, Clapperboard, Server as ServerIcon, ChevronDown, Clock } from "lucide-react-native";
 import { StyledButton } from "@/components/StyledButton";
 import useHomeStore, { RowItem, Category } from "@/stores/homeStore";
 import useAuthStore from "@/stores/authStore";
@@ -205,6 +205,9 @@ export default React.memo(function HomeScreen() {
             </Pressable>
           </View>
           <View style={dynamicStyles.mobileHeaderRight}>
+            <Pressable style={dynamicStyles.iconButton} onPress={() => router.push("/history")}>
+              <Clock size={20} color={theme === "light" ? "#0D1117" : "#F0F2F5"} />
+            </Pressable>
             <Pressable style={dynamicStyles.iconButton} onPress={() => router.push("/search")}>
               <Search size={20} color={theme === "light" ? "#0D1117" : "#F0F2F5"} />
             </Pressable>
@@ -276,6 +279,9 @@ export default React.memo(function HomeScreen() {
           <View style={dynamicStyles.rightHeaderButtons}>
             <StyledButton style={dynamicStyles.iconButton} onPress={() => router.push("/favorites")} variant="ghost">
               <Heart color={theme === "light" ? "#0D1117" : "#F0F2F5"} size={isTV ? 28 : 24} />
+            </StyledButton>
+            <StyledButton style={dynamicStyles.iconButton} onPress={() => router.push("/history")} variant="ghost">
+              <Clock color={theme === "light" ? "#0D1117" : "#F0F2F5"} size={isTV ? 28 : 24} />
             </StyledButton>
             <StyledButton
               style={dynamicStyles.iconButton}
