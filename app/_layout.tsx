@@ -134,6 +134,15 @@ export default function RootLayout() {
   }, [isAppReady, navigationState?.key]);
 
   useEffect(() => {
+    const forceHideTimeout = setTimeout(() => {
+      SplashScreen.hideAsync().catch(() => {
+        logger.warn("Force hide splash screen timeout reached");
+      });
+    }, 10000);
+    return () => clearTimeout(forceHideTimeout);
+  }, []);
+
+  useEffect(() => {
     if (!isAppReady || !navigationState?.key || initialRouteHandled) {
       return;
     }

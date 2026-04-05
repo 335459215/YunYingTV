@@ -310,6 +310,7 @@ export default React.memo(function HomeScreen() {
       alignItems: "center",
       paddingHorizontal: spacing,
       paddingVertical: spacing * 0.4,
+      paddingTop: insets.top + spacing * 0.4,
       backgroundColor: Colors.dark.surfaceElevated,
       borderBottomWidth: StyleSheet.hairlineWidth,
       borderBottomColor: Colors.dark.border,
