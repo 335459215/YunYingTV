@@ -93,6 +93,9 @@ export const ServerManagerSection: React.FC<ServerManagerSectionProps> = React.m
     
     try {
       if (isAddingNew) {
+        // 先设置 API base URL 以便后续请求
+        api.setBaseUrl(serverUrl.trim());
+        
         const newServer = await addServer({ 
           name: finalName, 
           url: serverUrl.trim() 
@@ -108,9 +111,39 @@ export const ServerManagerSection: React.FC<ServerManagerSectionProps> = React.m
           });
         }
         
-        // 自动切换到新服务器
+        // 切换到新服务器（会加载配置和账号）
         await setActiveServer(newServer.id);
+        
+        // 获取服务器配置
+        await fetchServerConfig();
+        
+        // 如果有账号密码，自动登录
+        if (username.trim() && password.trim()) {
+          try {
+            const isLocalStorage = useSettingsStore.getState().serverConfig?.StorageType === "localstorage";
+            await api.login(isLocalStorage ? undefined : username, password);
+            
+            const authState = useAuthStore.getState();
+            await authState.checkLoginStatus(newServer.url);
+            
+            if (useAuthStore.getState().isLoggedIn) {
+              await refreshPlayRecords();
+              Toast.show({ type: "success", text1: "服务器添加并登录成功" });
+            } else {
+              Toast.show({ type: "warning", text1: "服务器已添加，但登录失败", text2: "请检查账号密码" });
+            }
+          } catch {
+            Toast.show({ type: "warning", text1: "服务器已添加", text2: "登录失败，可稍后在编辑中重试" });
+          }
+        } else {
+          Toast.show({ type: "success", text1: "服务器添加成功" });
+        }
       } else if (editingServer) {
+        // 如果URL变了，先更新API base URL
+        if (editingServer.url !== serverUrl.trim()) {
+          api.setBaseUrl(serverUrl.trim());
+        }
+        
         await updateServer(editingServer.id, {
           name: finalName,
           url: serverUrl.trim(),
@@ -134,14 +167,36 @@ export const ServerManagerSection: React.FC<ServerManagerSectionProps> = React.m
               name: accountName.trim() || undefined,
             });
           }
+          
+          // 编辑模式下如果有账号信息，尝试自动登录
+          try {
+            const isLocalStorage = useSettingsStore.getState().serverConfig?.StorageType === "localstorage";
+            await api.login(isLocalStorage ? undefined : username, password);
+            
+            const authState = useAuthStore.getState();
+            await authState.checkLoginStatus(serverUrl.trim());
+            
+            if (useAuthStore.getState().isLoggedIn) {
+              await refreshPlayRecords();
+              Toast.show({ type: "success", text1: "服务器更新并登录成功" });
+            } else {
+              Toast.show({ type: "success", text1: "服务器更新成功" });
+            }
+          } catch {
+            Toast.show({ type: "success", text1: "服务器更新成功" });
+          }
+        } else {
+          Toast.show({ type: "success", text1: "服务器更新成功" });
         }
+        
+        // 重新获取服务器配置
+        await fetchServerConfig();
       }
 
       setShowEditModal(false);
       setEditingServer(null);
       onChanged();
       
-      Toast.show({ type: "success", text1: isAddingNew ? "服务器添加成功" : "服务器更新成功" });
     } catch (error) {
       Alert.alert("错误", error instanceof Error ? error.message : "操作失败");
     }
@@ -238,8 +293,22 @@ export const ServerManagerSection: React.FC<ServerManagerSectionProps> = React.m
   };
 
   const handleSetActiveServer = async (serverId: string) => {
+    // 先获取目标服务器信息
+    const targetServer = servers.find(s => s.id === serverId);
+    if (targetServer) {
+      // 设置 API base URL
+      api.setBaseUrl(targetServer.url);
+    }
+    
     await setActiveServer(serverId);
-    await fetchServerConfig();
+    
+    // 获取服务器配置
+    try {
+      await fetchServerConfig();
+    } catch {
+      Toast.show({ type: "warning", text1: "获取服务器配置失败" });
+    }
+    
     onChanged();
   };
 
