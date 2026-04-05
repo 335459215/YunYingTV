@@ -1,15 +1,62 @@
-name: Android Build
+name: Android CI/CD Pipeline
 
 on:
   push:
     branches: [ "master", "main" ]
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
+      - 'screenshot*.png'
+      - '.github/ISSUE_TEMPLATE/**'
   pull_request:
     branches: [ "master", "main" ]
-  workflow_dispatch:  # 允许手动触发
+  workflow_dispatch:
+    inputs:
+      create_release:
+        description: 'Create GitHub Release with APK'
+        required: false
+        default: 'false'
+        type: choice
+        options:
+          - 'true'
+          - 'false'
+
+env:
+  NODE_VERSION: '20'
+  JAVA_VERSION: '17'
+  GRADLE_OPTS: "-Xmx4g -XX:MaxMetaspaceSize=1g -Dorg.gradle.daemon=false"
 
 jobs:
-  build:
+  # Job 1: 代码质量检查
+  quality-check:
+    name: Code Quality Check
     runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run ESLint
+        run: npm run lint
+
+      - name: Run TypeScript check
+        run: npm run typecheck
+
+  # Job 2: 构建Android Release APK
+  build-apk:
+    name: Build Android APK
+    runs-on: ubuntu-latest
+    needs: quality-check
     timeout-minutes: 45
     permissions:
       contents: read
@@ -21,13 +68,13 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
 
       - name: Setup Java JDK
         uses: actions/setup-java@v4
         with:
-          java-version: '17'
+          java-version: ${{ env.JAVA_VERSION }}
           distribution: 'temurin'
 
       - name: Install dependencies
@@ -35,7 +82,7 @@ jobs:
 
       - name: Read app version
         id: app_version
-        run: echo "VERSION=$(node -p \"require('./app.json').expo.version\")" >> $GITHUB_OUTPUT
+        run: echo "VERSION=$(node -p "require('./app.json').expo.version")" >> $GITHUB_OUTPUT
 
       - name: Restore Gradle cache
         uses: actions/cache@v4
@@ -43,6 +90,7 @@ jobs:
           path: |
             ~/.gradle/caches
             ~/.gradle/wrapper
+            android/app/build
           key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
           restore-keys: |
             ${{ runner.os }}-gradle-
@@ -50,20 +98,98 @@ jobs:
       - name: Make Gradle wrapper executable
         run: chmod +x android/gradlew
 
-      - name: Run lint
-        run: npm run lint
-
-      - name: Run typecheck
-        run: npm run typecheck
-
       - name: Build Android Release APK
         run: npm run build
-        env:
-          GRADLE_OPTS: "-Xmx4g -XX:MaxMetaspaceSize=1g"
+
+      - name: Verify APK exists
+        run: |
+          if [ ! -f "android/app/build/outputs/apk/release/app-release.apk" ]; then
+            echo "::error::APK build failed - file not found"
+            exit 1
+          fi
+          ls -lh android/app/build/outputs/apk/release/app-release.apk
+
+      - name: Prepare artifact
+        run: |
+          mkdir -p release
+          cp android/app/build/outputs/apk/release/app-release.apk \
+             release/YunYingTV-v${{ steps.app_version.outputs.VERSION }}-${{ github.sha }}.apk
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
         with:
           name: YunYingTV-v${{ steps.app_version.outputs.VERSION }}-release
-          path: android/app/build/outputs/apk/release/app-release.apk
+          path: release/*.apk
           retention-days: 14
+          if-no-files-found: error
+
+  # Job 3: 可选 - 创建 GitHub Release
+  create-release:
+    name: Create GitHub Release
+    runs-on: ubuntu-latest
+    needs: build-apk
+    if: |
+      (github.event_name == 'push' && github.ref == 'refs/heads/master') ||
+      (github.event_name == 'workflow_dispatch' && github.event.inputs.create_release == 'true')
+    permissions:
+      contents: write
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Download APK artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: YunYingTV-v*-release
+          path: release/
+
+      - name: Read app version
+        id: app_version
+        run: echo "VERSION=$(node -p "require('./app.json').expo.version")" >> $GITHUB_OUTPUT
+
+      - name: Generate changelog
+        id: changelog
+        run: |
+          echo "CHANGELOG<<EOF" >> $GITHUB_OUTPUT
+          echo "## 🚀 YunYingTV v${{ steps.app_version.outputs.VERSION }}" >> $GITHUB_OUTPUT
+          echo "" >> $GITHUB_OUTPUT
+          echo "### ✨ 新功能" >> $GITHUB_OUTPUT
+          echo "- 多主题系统：支持深色、浅色、透明三种模式" >> $GITHUB_OUTPUT
+          echo "- 设置页新增主题切换UI组件" >> $GITHUB_OUTPUT
+          echo "- 主题选择持久化存储" >> $GITHUB_OUTPUT
+          echo "" >> $GITHUB_OUTPUT
+          echo "### 🔧 优化改进" >> $GITHUB_OUTPUT
+          echo "- 全局组件适配动态主题系统" >> $GITHUB_OUTPUT
+          echo "- 修复所有硬编码颜色值问题" >> $GITHUB_OUTPUT
+          echo "- StatusBar/SystemUI 背景色动态响应" >> $GITHUB_OUTPUT
+          echo "" >> $GITHUB_OUTPUT
+          echo "### 📱 构建信息" >> $GITHUB_OUTPUT
+          echo "- Commit: \`${{ github.sha }}\`" >> $GITHUB_OUTPUT
+          echo "- Triggered by: ${{ github.actor }}" >> $GITHUB_OUTPUT
+          echo "- Build time: $(date -u '+%Y-%m-%d %H:%M UTC')" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ steps.app_version.outputs.VERSION }}
+          name: Release v${{ steps.app_version.outputs.VERSION }}
+          body: ${{ steps.changelog.outputs.CHANGELOG }}
+          draft: false
+          prerelease: false
+          files: release/*.apk
+          fail_on_unmatched_files: false
+          generate_release_notes: false
+          make_latest: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Release summary
+        run: |
+          echo "✅ Release created successfully!"
+          echo "📦 Version: v${{ steps.app_version.outputs.VERSION }}"
+          echo "🔗 URL: https://github.com/${{ github.repository }}/releases/tag/v${{ steps.app_version.outputs.VERSION }}"
