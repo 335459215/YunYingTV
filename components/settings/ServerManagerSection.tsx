@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { View, TextInput, StyleSheet, Alert, FlatList, Pressable, ActivityIndicator, Keyboard } from "react-native";
+import { View, TextInput, StyleSheet, Alert, FlatList, Pressable, ActivityIndicator, Keyboard, Modal } from "react-native";
 import { ThemedText } from "@/components/ThemedText";
 import { SettingsSection } from "./SettingsSection";
 import { useSettingsStore } from "@/stores/settingsStore";
@@ -9,7 +9,7 @@ import { StyledButton } from "@/components/StyledButton";
 import { Server } from "@/services/storage";
 import { api } from "@/services/api";
 import Toast from "react-native-toast-message";
-import { Check } from 'lucide-react-native';
+import { Check, ChevronRight, Plus, X, LogIn, Trash2, Pencil } from 'lucide-react-native';
 
 interface ServerManagerSectionProps {
   onChanged: () => void;
@@ -17,28 +17,28 @@ interface ServerManagerSectionProps {
 }
 
 export const ServerManagerSection: React.FC<ServerManagerSectionProps> = React.memo(({ onChanged, onFocus }) => {
-  const { 
-    servers, 
+  const {
+    servers,
     currentServer,
     accounts,
     serverConfig,
-    addServer, 
+    addServer,
     updateServer,
-    deleteServer, 
+    deleteServer,
     setActiveServer,
     addAccount,
     updateAccount,
     fetchServerConfig
   } = useSettingsStore();
-  
+
   const { isLoggedIn } = useAuthStore();
   const { refreshPlayRecords } = useHomeStore();
 
   const [showEditModal, setShowEditModal] = useState(false);
   const [editingServer, setEditingServer] = useState<Server | null>(null);
   const [isAddingNew, setIsAddingNew] = useState(false);
-  
-  // 表单状态
+  const [showLoginInline, setShowLoginInline] = useState(false);
+
   const [serverName, setServerName] = useState("");
   const [serverUrl, setServerUrl] = useState("");
   const [accountName, setAccountName] = useState("");
@@ -90,18 +90,16 @@ export const ServerManagerSection: React.FC<ServerManagerSectionProps> = React.m
     }
 
     const finalName = serverName.trim() || extractNameFromUrl(serverUrl.trim());
-    
+
     try {
       if (isAddingNew) {
-        // 先设置 API base URL 以便后续请求
         api.setBaseUrl(serverUrl.trim());
-        
-        const newServer = await addServer({ 
-          name: finalName, 
-          url: serverUrl.trim() 
+
+        const newServer = await addServer({
+          name: finalName,
+          url: serverUrl.trim()
         });
-        
-        // 如果填写了账号信息，自动添加账号
+
         if (username.trim() && password.trim()) {
           await addAccount({
             serverId: newServer.id,
@@ -110,22 +108,18 @@ export const ServerManagerSection: React.FC<ServerManagerSectionProps> = React.m
             name: accountName.trim() || undefined,
           });
         }
-        
-        // 切换到新服务器（会加载配置和账号）
+
         await setActiveServer(newServer.id);
-        
-        // 获取服务器配置
         await fetchServerConfig();
-        
-        // 如果有账号密码，自动登录
+
         if (username.trim() && password.trim()) {
           try {
             const isLocalStorage = useSettingsStore.getState().serverConfig?.StorageType === "localstorage";
             await api.login(isLocalStorage ? undefined : username, password);
-            
+
             const authState = useAuthStore.getState();
             await authState.checkLoginStatus(newServer.url);
-            
+
             if (useAuthStore.getState().isLoggedIn) {
               await refreshPlayRecords();
               Toast.show({ type: "success", text1: "服务器添加并登录成功" });
@@ -133,26 +127,24 @@ export const ServerManagerSection: React.FC<ServerManagerSectionProps> = React.m
               Toast.show({ type: "warning", text1: "服务器已添加，但登录失败", text2: "请检查账号密码" });
             }
           } catch {
-            Toast.show({ type: "warning", text1: "服务器已添加", text2: "登录失败，可稍后在编辑中重试" });
+            Toast.show({ type: "warning", text1: "服务器已添加", text2: "登录失败，可稍后重试" });
           }
         } else {
           Toast.show({ type: "success", text1: "服务器添加成功" });
         }
       } else if (editingServer) {
-        // 如果URL变了，先更新API base URL
         if (editingServer.url !== serverUrl.trim()) {
           api.setBaseUrl(serverUrl.trim());
         }
-        
+
         await updateServer(editingServer.id, {
           name: finalName,
           url: serverUrl.trim(),
         });
-        
-        // 更新或添加账号
+
         if (username.trim() && password.trim()) {
           const existingAccount = accounts.find(a => a.serverId === editingServer.id);
-          
+
           if (existingAccount) {
             await updateAccount(existingAccount.id, {
               username: username.trim(),
@@ -167,15 +159,14 @@ export const ServerManagerSection: React.FC<ServerManagerSectionProps> = React.m
               name: accountName.trim() || undefined,
             });
           }
-          
-          // 编辑模式下如果有账号信息，尝试自动登录
+
           try {
             const isLocalStorage = useSettingsStore.getState().serverConfig?.StorageType === "localstorage";
             await api.login(isLocalStorage ? undefined : username, password);
-            
+
             const authState = useAuthStore.getState();
             await authState.checkLoginStatus(serverUrl.trim());
-            
+
             if (useAuthStore.getState().isLoggedIn) {
               await refreshPlayRecords();
               Toast.show({ type: "success", text1: "服务器更新并登录成功" });
@@ -188,28 +179,24 @@ export const ServerManagerSection: React.FC<ServerManagerSectionProps> = React.m
         } else {
           Toast.show({ type: "success", text1: "服务器更新成功" });
         }
-        
-        // 重新获取服务器配置
+
         await fetchServerConfig();
       }
 
       setShowEditModal(false);
       setEditingServer(null);
       onChanged();
-      
+
     } catch (error) {
       Alert.alert("错误", error instanceof Error ? error.message : "操作失败");
     }
   };
 
   const handleLogin = async () => {
-    if (!currentServer && !editingServer) {
-      Toast.show({ type: "error", text1: "请先保存服务器" });
+    if (!currentServer) {
+      Toast.show({ type: "error", text1: "请先选择服务器" });
       return;
     }
-
-    const targetServer = editingServer || currentServer;
-    if (!targetServer) return;
 
     const isLocalStorage = serverConfig?.StorageType === "localstorage";
     if (!password || (!isLocalStorage && !username)) {
@@ -219,46 +206,17 @@ export const ServerManagerSection: React.FC<ServerManagerSectionProps> = React.m
 
     setIsLoggingIn(true);
     try {
-      // 如果正在编辑且URL变了，先更新API base URL
-      if (editingServer && editingServer.url !== serverUrl.trim()) {
-        api.setBaseUrl(serverUrl.trim());
-      }
-      
       await api.login(isLocalStorage ? undefined : username, password);
-      
+
       const authState = useAuthStore.getState();
-      await authState.checkLoginStatus(targetServer.url);
-      
+      await authState.checkLoginStatus(currentServer.url);
+
       if (useAuthStore.getState().isLoggedIn) {
         await refreshPlayRecords();
         Toast.show({ type: "success", text1: "登录成功" });
         Keyboard.dismiss();
-        
-        // 如果在编辑模式下，保存账号信息
-        if (editingServer || currentServer) {
-          const serverId = editingServer?.id || currentServer?.id;
-          if (serverId) {
-            const accounts = useSettingsStore.getState().accounts;
-            const serverAccounts = accounts.filter(a => a.serverId === serverId);
-            
-            if (serverAccounts.length > 0) {
-              await updateAccount(serverAccounts[0].id, {
-                username: username.trim(),
-                password: password.trim(),
-                name: accountName.trim() || undefined,
-              });
-            } else {
-              await addAccount({
-                serverId,
-                username: username.trim(),
-                password: password.trim(),
-                name: accountName.trim() || undefined,
-              });
-            }
-          }
-        }
-        
-        setShowEditModal(false);
+        setPassword("");
+        setShowLoginInline(false);
         onChanged();
       } else {
         Toast.show({ type: "error", text1: "登录失败，请检查账号密码" });
@@ -293,22 +251,19 @@ export const ServerManagerSection: React.FC<ServerManagerSectionProps> = React.m
   };
 
   const handleSetActiveServer = async (serverId: string) => {
-    // 先获取目标服务器信息
     const targetServer = servers.find(s => s.id === serverId);
     if (targetServer) {
-      // 设置 API base URL
       api.setBaseUrl(targetServer.url);
     }
-    
+
     await setActiveServer(serverId);
-    
-    // 获取服务器配置
+
     try {
       await fetchServerConfig();
     } catch {
       Toast.show({ type: "warning", text1: "获取服务器配置失败" });
     }
-    
+
     onChanged();
   };
 
@@ -328,95 +283,166 @@ export const ServerManagerSection: React.FC<ServerManagerSectionProps> = React.m
     const hasAccount = serverAccounts.length > 0;
 
     return (
-      <View style={[styles.serverItem, isActive && styles.activeServerItem]}>
+      <View style={styles.listRow}>
         <Pressable
-          style={styles.serverContent}
+          style={styles.listRowContent}
           onPress={() => !isActive && handleSetActiveServer(item.id)}
         >
-          <View style={styles.serverInfo}>
-            <ThemedText style={styles.serverName}>{item.name}</ThemedText>
-            <ThemedText style={styles.serverUrl}>{item.url}</ThemedText>
+          <View style={styles.rowMain}>
+            <View style={[styles.rowIndicator, isActive && styles.rowIndicatorActive]} />
+            <View style={styles.rowText}>
+              <ThemedText style={styles.rowTitle} numberOfLines={1}>{item.name}</ThemedText>
+              <ThemedText style={styles.rowSubtitle} numberOfLines={1}>{item.url}</ThemedText>
+            </View>
+          </View>
+
+          <View style={styles.rowTrailing}>
             {hasAccount && (
-              <ThemedText style={styles.accountHint}>
-                已配置账号: {serverAccounts[0]?.username}
+              <ThemedText style={styles.accountBadge}>
+                {isLoggedIn && isActive ? "已登录" : `${serverAccounts[0]?.username}`}
               </ThemedText>
             )}
+            {isActive ? (
+              <View style={styles.checkCircle}>
+                <Check size={12} color="#FFFFFF" strokeWidth={2.5} />
+              </View>
+            ) : (
+              <ChevronRight size={16} color="#5C6270" />
+            )}
           </View>
-          
-          {/* 选中标识 */}
-          {isActive && (
-            <View style={styles.selectedBadge}>
-              <Check size={14} color="#FFFFFF" strokeWidth={3} />
-            </View>
-          )}
         </Pressable>
 
-        <View style={styles.serverActions}>
-          <StyledButton
-            text="编辑"
-            onPress={() => handleEditServer(item)}
-            variant="primary"
-            style={styles.actionButton}
-          />
+        <View style={styles.rowActions}>
+          <Pressable onPress={() => handleEditServer(item)} style={styles.iconBtn}>
+            <Pencil size={15} color="#8B919A" />
+          </Pressable>
           {!isActive && (
-            <StyledButton
-              text="切换"
-              onPress={() => handleSetActiveServer(item.id)}
-              variant="secondary"
-              style={styles.actionButton}
-            />
+            <Pressable onPress={() => handleDeleteServer(item)} style={styles.iconBtn}>
+              <Trash2 size={15} color="#EF4444" />
+            </Pressable>
           )}
-          <StyledButton
-            text="删除"
-            onPress={() => handleDeleteServer(item)}
-            variant="danger"
-            style={styles.actionButton}
-          />
         </View>
       </View>
     );
   };
 
+  const renderListItemSeparator = () => <View style={styles.separator} />;
+
   return (
     <SettingsSection focusable onFocus={onFocus}>
       <View style={styles.container}>
-        <View style={styles.header}>
-          <ThemedText style={styles.sectionTitle}>服务器管理</ThemedText>
-          <StyledButton
-            text="添加服务器"
-            onPress={handleAddServer}
-            variant="primary"
-            style={styles.addButton}
-          />
+        {/* Section Header */}
+        <View style={styles.sectionHeader}>
+          <ThemedText style={styles.sectionTitle}>服务器</ThemedText>
+          <Pressable onPress={handleAddServer} style={styles.addBtn}>
+            <Plus size={18} color="#00C96B" strokeWidth={2} />
+            <ThemedText style={styles.addBtnText}>添加</ThemedText>
+          </Pressable>
         </View>
 
+        {/* Server List */}
         {servers.length === 0 ? (
-          <ThemedText style={styles.emptyText}>暂无服务器，请添加服务器</ThemedText>
+          <View style={styles.emptyContainer}>
+            <ThemedText style={styles.emptyText}>暂无服务器</ThemedText>
+            <Pressable onPress={handleAddServer} style={styles.emptyAddBtn}>
+              <Plus size={16} color="#00C96B" />
+              <ThemedText style={styles.emptyAddText}>添加第一个服务器</ThemedText>
+            </Pressable>
+          </View>
         ) : (
           <FlatList
             data={servers}
             renderItem={renderServerItem}
             keyExtractor={(item) => item.id}
-            style={styles.serverList}
+            ItemSeparatorComponent={renderListItemSeparator}
+            scrollEnabled={true}
+            style={styles.list}
             showsVerticalScrollIndicator={false}
           />
         )}
 
-        {/* 编辑/添加模态框 */}
-        {showEditModal && (
-          <View style={styles.modalOverlay}>
-            <View style={styles.modalContent}>
-              <ThemedText style={styles.modalTitle}>
-                {isAddingNew ? '添加服务器' : '编辑服务器'}
-              </ThemedText>
+        {/* Inline Login - shown when server selected and not logged in */}
+        {currentServer && !isLoggedIn && (
+          <View style={styles.loginInline}>
+            <Pressable
+              onPress={() => setShowLoginInline(!showLoginInline)}
+              style={styles.loginHeader}
+            >
+              <LogIn size={15} color="#00C96B" />
+              <ThemedText style={styles.loginHeaderText}>登录到 {currentServer.name}</ThemedText>
+              <ChevronRight size={14} color="#5C6270"
+                style={{ transform: [{ rotate: showLoginInline ? '90deg' : '0deg' }] }}
+              />
+            </Pressable>
 
-              {/* 服务器地址 */}
-              <View style={styles.inputGroup}>
-                <ThemedText style={styles.inputLabel}>服务器地址 *</ThemedText>
+            {showLoginInline && (
+              <View style={styles.loginForm}>
+                {serverConfig?.StorageType !== "localstorage" && (
+                  <TextInput
+                    style={styles.input}
+                    placeholder="用户名"
+                    placeholderTextColor="#5C6270"
+                    value={username}
+                    onChangeText={setUsername}
+                    autoCapitalize="none"
+                    autoCorrect={false}
+                    returnKeyType="next"
+                  />
+                )}
                 <TextInput
                   style={styles.input}
-                  placeholder="http://或 https://"
-                  placeholderTextColor="#888"
+                  placeholder="密码"
+                  placeholderTextColor="#5C6270"
+                  secureTextEntry
+                  value={password}
+                  onChangeText={setPassword}
+                  returnKeyType="go"
+                />
+                <StyledButton
+                  text={isLoggingIn ? "" : "登录"}
+                  onPress={handleLogin}
+                  disabled={isLoggingIn}
+                  variant="primary"
+                  style={styles.loginBtn}
+                >
+                  {isLoggingIn && <ActivityIndicator color="#fff" />}
+                </StyledButton>
+              </View>
+            )}
+          </View>
+        )}
+
+        {/* Logged in indicator */}
+        {currentServer && isLoggedIn && (
+          <View style={styles.loggedInBar}>
+            <View style={styles.loggedInDot} />
+            <ThemedText style={styles.loggedInText}>
+              已登录 · {currentServer.name}
+            </ThemedText>
+          </View>
+        )}
+
+        {/* Edit/Add Modal */}
+        <Modal visible={showEditModal} transparent animationType="fade">
+          <Pressable style={styles.modalBackdrop} onPress={handleCloseModal}>
+            <Pressable style={styles.modalCard} onStartShouldSetResponder={() => true}>
+              {/* Modal Header */}
+              <View style={styles.modalHeader}>
+                <ThemedText style={styles.modalTitle}>
+                  {isAddingNew ? '添加服务器' : '编辑服务器'}
+                </ThemedText>
+                <Pressable onPress={handleCloseModal} style={styles.modalCloseBtn}>
+                  <X size={20} color="#8B919A" />
+                </Pressable>
+              </View>
+
+              {/* Server URL */}
+              <View style={styles.fieldGroup}>
+                <ThemedText style={styles.fieldLabel}>服务器地址</ThemedText>
+                <TextInput
+                  style={styles.modalInput}
+                  placeholder="https://example.com"
+                  placeholderTextColor="#4A4E56"
                   value={serverUrl}
                   onChangeText={setServerUrl}
                   autoCapitalize="none"
@@ -424,58 +450,48 @@ export const ServerManagerSection: React.FC<ServerManagerSectionProps> = React.m
                 />
               </View>
 
-              {/* 服务器名称（可选） */}
-              <View style={styles.inputGroup}>
-                <ThemedText style={styles.inputLabel}>服务器名称（可选）</ThemedText>
+              {/* Server Name (optional) */}
+              <View style={styles.fieldGroup}>
+                <ThemedText style={styles.fieldLabel}>名称（可选）</ThemedText>
                 <TextInput
-                  style={styles.input}
-                  placeholder={`留空将使用: ${extractNameFromUrl(serverUrl)}`}
-                  placeholderTextColor="#888"
+                  style={styles.modalInput}
+                  placeholder={`自动使用: ${extractNameFromUrl(serverUrl)}`}
+                  placeholderTextColor="#4A4E56"
                   value={serverName}
                   onChangeText={setServerName}
                 />
               </View>
 
-              {/* 账号配置 */}
-              <View style={styles.divider} />
-              <ThemedText style={styles.subTitle}>账号配置</ThemedText>
+              {/* Divider */}
+              <View style={styles.modalDivider} />
 
-              {/* 账号名称（可选） */}
-              <View style={styles.inputGroup}>
-                <ThemedText style={styles.inputLabel}>账号名称（可选）</ThemedText>
-                <TextInput
-                  style={styles.input}
-                  placeholder="自定义显示名称"
-                  placeholderTextColor="#888"
-                  value={accountName}
-                  onChangeText={setAccountName}
-                />
-              </View>
+              {/* Account section */}
+              <ThemedText style={styles.subHeader}>账号配置</ThemedText>
 
-              {/* 用户名 */}
-              {(!serverConfig || serverConfig?.StorageType !== "localstorage") && (
-                <View style={styles.inputGroup}>
-                  <ThemedText style={styles.inputLabel}>用户名 *</ThemedText>
+              <View style={styles.fieldGroup}>
+                <ThemedText style={styles.fieldLabel}>用户名{serverConfig?.StorageType === "localstorage" ? "" : ""}</ThemedText>
+                {serverConfig?.StorageType !== "localstorage" ? (
                   <TextInput
-                    style={styles.input}
+                    style={styles.modalInput}
                     placeholder="请输入用户名"
-                    placeholderTextColor="#888"
+                    placeholderTextColor="#4A4E56"
                     value={username}
                     onChangeText={setUsername}
                     autoCapitalize="none"
                     autoCorrect={false}
                     returnKeyType="next"
                   />
-                </View>
-              )}
+                ) : (
+                  <ThemedText style={styles.fieldHint}>当前使用本地存储模式，无需用户名</ThemedText>
+                )}
+              </View>
 
-              {/* 密码 */}
-              <View style={styles.inputGroup}>
-                <ThemedText style={styles.inputLabel}>密码 *</ThemedText>
+              <View style={styles.fieldGroup}>
+                <ThemedText style={styles.fieldLabel}>密码</ThemedText>
                 <TextInput
-                  style={styles.input}
+                  style={styles.modalInput}
                   placeholder="请输入密码"
-                  placeholderTextColor="#888"
+                  placeholderTextColor="#4A4E56"
                   secureTextEntry
                   value={password}
                   onChangeText={setPassword}
@@ -483,57 +499,30 @@ export const ServerManagerSection: React.FC<ServerManagerSectionProps> = React.m
                 />
               </View>
 
-              {/* 当前登录状态 */}
+              {/* Status */}
               {(editingServer || currentServer) && isLoggedIn && (
-                <View style={styles.loginStatus}>
-                  <ThemedText style={styles.loginStatusText}>
-                    ✓ 已登录
-                  </ThemedText>
+                <View style={styles.statusBadge}>
+                  <Check size={13} color="#22C55E" />
+                  <ThemedText style={styles.statusText}>当前已登录</ThemedText>
                 </View>
               )}
 
-              {/* 按钮组 */}
-              <View style={styles.modalButtons}>
+              {/* Buttons */}
+              <View style={styles.modalActions}>
+                <Pressable onPress={handleCloseModal} style={styles.cancelBtn}>
+                  <ThemedText style={styles.cancelBtnText}>取消</ThemedText>
+                </Pressable>
                 <StyledButton
-                  text="取消"
-                  onPress={handleCloseModal}
-                  variant="secondary"
-                  style={styles.modalButton}
+                  text={isAddingNew ? "添加" : "保存"}
+                  onPress={handleSaveServer}
+                  disabled={!serverUrl.trim()}
+                  variant="primary"
+                  style={styles.confirmBtn}
                 />
-                
-                {isAddingNew ? (
-                  <StyledButton
-                    text={isLoggingIn ? "" : "添加并登录"}
-                    onPress={handleSaveServer}
-                    disabled={!serverUrl.trim()}
-                    variant="primary"
-                    style={styles.modalButton}
-                  >
-                    {isLoggingIn && <ActivityIndicator color="#fff" />}
-                  </StyledButton>
-                ) : (
-                  <>
-                    <StyledButton
-                      text="保存"
-                      onPress={handleSaveServer}
-                      variant="primary"
-                      style={styles.modalButtonSmall}
-                    />
-                    <StyledButton
-                      text={isLoggingIn ? "" : "登录"}
-                      onPress={handleLogin}
-                      disabled={isLoggingIn || !password}
-                      variant="primary"
-                      style={[styles.modalButtonSmall, styles.loginButton]}
-                    >
-                      {isLoggingIn && <ActivityIndicator color="#fff" />}
-                    </StyledButton>
-                  </>
-                )}
               </View>
-            </View>
-          </View>
-        )}
+            </Pressable>
+          </Pressable>
+        </Modal>
       </View>
     </SettingsSection>
   );
@@ -542,171 +531,294 @@ export const ServerManagerSection: React.FC<ServerManagerSectionProps> = React.m
 ServerManagerSection.displayName = 'ServerManagerSection';
 
 const styles = StyleSheet.create({
-  container: {
-    marginBottom: 12,
-  },
-  header: {
+  container: {},
+  sectionHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: 16,
+    paddingHorizontal: 16,
+    paddingTop: 12,
+    paddingBottom: 8,
   },
   sectionTitle: {
-    fontSize: 16,
-    fontWeight: "bold",
+    fontSize: 13,
+    fontWeight: "600",
+    color: "#8B919A",
+    letterSpacing: 0.5,
+    textTransform: "uppercase",
   },
-  addButton: {
-    paddingHorizontal: 16,
-    height: 40,
-  },
-  serverList: {
-    maxHeight: 350,
-  },
-  serverItem: {
-    flexDirection: "column",
-    padding: 14,
-    backgroundColor: "#333",
-    borderRadius: 10,
-    marginBottom: 10,
-    borderWidth: 1.5,
-    borderColor: "transparent",
-  },
-  activeServerItem: {
-    borderColor: "#3b82f6",
-    backgroundColor: "rgba(59, 130, 246, 0.08)",
-  },
-  serverContent: {
+  addBtn: {
     flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    paddingVertical: 4,
+    paddingHorizontal: 10,
+  },
+  addBtnText: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: "#00C96B",
+  },
+  list: {},
+  listRow: {
+    paddingHorizontal: 16,
+    paddingVertical: 2,
+  },
+  listRowContent: {
+    flexDirection: "row",
+    alignItems: "center",
     justifyContent: "space-between",
-    alignItems: "flex-start",
+    paddingVertical: 12,
   },
-  serverInfo: {
+  rowMain: {
+    flexDirection: "row",
+    alignItems: "center",
     flex: 1,
-    marginRight: 10,
   },
-  serverName: {
-    fontSize: 15,
-    fontWeight: "bold",
-    marginBottom: 6,
-    color: "#fff",
+  rowIndicator: {
+    width: 3,
+    height: 28,
+    borderRadius: 2,
+    backgroundColor: "transparent",
+    marginRight: 12,
   },
-  serverUrl: {
-    fontSize: 12,
-    color: "#aaa",
-    marginBottom: 4,
+  rowIndicatorActive: {
+    backgroundColor: "#00C96B",
   },
-  accountHint: {
+  rowText: {
+    flex: 1,
+  },
+  rowTitle: {
+    fontSize: 16,
+    fontWeight: "500",
+    color: "#F0F2F5",
+    marginBottom: 2,
+  },
+  rowSubtitle: {
+    fontSize: 13,
+    color: "#5C6270",
+  },
+  rowTrailing: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+  },
+  accountBadge: {
     fontSize: 11,
-    color: "#3b82f6",
-    marginTop: 4,
+    color: "#00C96B",
+    backgroundColor: "rgba(0, 201, 107, 0.10)",
+    paddingHorizontal: 7,
+    paddingVertical: 2,
+    borderRadius: 6,
+    overflow: "hidden",
   },
-  selectedBadge: {
-    width: 22,
-    height: 22,
-    borderRadius: 11,
+  checkCircle: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    backgroundColor: "#00C96B",
     justifyContent: "center",
     alignItems: "center",
-    marginTop: 2,
   },
-  serverActions: {
+  rowActions: {
     flexDirection: "row",
-    marginTop: 10,
-    paddingTop: 10,
-    borderTopWidth: 1,
-    borderTopColor: "#444",
-  },
-  actionButton: {
-    paddingHorizontal: 12,
-    height: 34,
     marginLeft: 8,
+    gap: 4,
+    paddingVertical: 4,
+  },
+  iconBtn: {
+    padding: 6,
+    borderRadius: 6,
+  },
+  separator: {
+    height: StyleSheet.hairlineWidth,
+    backgroundColor: "rgba(255, 255, 255, 0.06)",
+    marginLeft: 48,
+  },
+  emptyContainer: {
+    paddingVertical: 32,
+    alignItems: "center",
+    gap: 12,
   },
   emptyText: {
     fontSize: 14,
-    color: "#888",
-    textAlign: "center",
-    paddingVertical: 20,
+    color: "#5C6270",
   },
-  modalOverlay: {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: "rgba(0, 0, 0, 0.85)",
-    justifyContent: "center",
+  emptyAddBtn: {
+    flexDirection: "row",
     alignItems: "center",
+    gap: 6,
+    paddingVertical: 8,
+    paddingHorizontal: 16,
     borderRadius: 8,
+    backgroundColor: "rgba(0, 201, 107, 0.08)",
   },
-  modalContent: {
-    backgroundColor: "#222",
-    padding: 24,
-    borderRadius: 12,
-    width: "92%",
-    maxWidth: 420,
-    maxHeight: "85%",
-  },
-  modalTitle: {
-    fontSize: 20,
-    fontWeight: "bold",
-    marginBottom: 20,
-    textAlign: "center",
-    color: "#fff",
-  },
-  inputGroup: {
-    marginBottom: 14,
-  },
-  inputLabel: {
+  emptyAddText: {
     fontSize: 13,
-    marginBottom: 6,
-    color: "#ccc",
+    color: "#00C96B",
     fontWeight: "500",
   },
-  input: {
-    height: 46,
-    backgroundColor: "#333",
-    borderRadius: 8,
-    paddingHorizontal: 14,
-    color: "white",
-    fontSize: 15,
-  },
-  divider: {
-    height: 1,
-    backgroundColor: "#444",
-    marginVertical: 16,
-  },
-  subTitle: {
-    fontSize: 15,
-    fontWeight: "600",
-    color: "#fff",
-    marginBottom: 12,
-  },
-  loginStatus: {
-    marginTop: 12,
-    padding: 10,
-    backgroundColor: "rgba(34, 197, 94, 0.1)",
-    borderRadius: 8,
+
+  loginInline: {
+    marginTop: 4,
+    marginHorizontal: 12,
+    borderRadius: 10,
+    backgroundColor: "rgba(0, 201, 107, 0.04)",
     borderWidth: 1,
-    borderColor: "rgba(34, 197, 94, 0.3)",
+    borderColor: "rgba(0, 201, 107, 0.12)",
+    overflow: "hidden",
   },
-  loginStatusText: {
-    color: "#22c55e",
+  loginHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    paddingVertical: 12,
+    paddingHorizontal: 14,
+  },
+  loginHeaderText: {
+    flex: 1,
+    fontSize: 14,
+    fontWeight: "500",
+    color: "#F0F2F5",
+  },
+  loginForm: {
+    paddingHorizontal: 14,
+    paddingBottom: 14,
+    gap: 10,
+  },
+  input: {
+    height: 42,
+    backgroundColor: "rgba(255, 255, 255, 0.05)",
+    borderRadius: 9,
+    paddingHorizontal: 14,
+    color: "#F0F2F5",
+    fontSize: 15,
+  },
+  loginBtn: {
+    marginTop: 4,
+  },
+  loggedInBar: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    marginTop: 8,
+    marginHorizontal: 16,
+    paddingVertical: 10,
+    paddingHorizontal: 14,
+    borderRadius: 9,
+    backgroundColor: "rgba(34, 197, 94, 0.07)",
+  },
+  loggedInDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: "#22C55E",
+  },
+  loggedInText: {
     fontSize: 13,
-    fontWeight: "600",
-    textAlign: "center",
+    color: "#22C55E",
+    fontWeight: "500",
   },
-  modalButtons: {
+
+  modalBackdrop: {
+    flex: 1,
+    backgroundColor: "rgba(0, 0, 0, 0.60)",
+    justifyContent: "flex-end",
+  },
+  modalCard: {
+    backgroundColor: "#16171A",
+    borderTopLeftRadius: 16,
+    borderTopRightRadius: 16,
+    paddingTop: 20,
+    paddingBottom: 36,
+    paddingHorizontal: 24,
+  },
+  modalHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
-    marginTop: 20,
-    gap: 8,
+    alignItems: "center",
+    marginBottom: 24,
   },
-  modalButton: {
+  modalTitle: {
+    fontSize: 19,
+    fontWeight: "700",
+    color: "#F0F2F5",
+  },
+  modalCloseBtn: {
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    backgroundColor: "rgba(255, 255, 255, 0.06)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  fieldGroup: {
+    marginBottom: 16,
+  },
+  fieldLabel: {
+    fontSize: 13,
+    fontWeight: "600",
+    color: "#8B919A",
+    marginBottom: 8,
+  },
+  fieldHint: {
+    fontSize: 13,
+    color: "#5C6270",
+  },
+  modalInput: {
+    height: 46,
+    backgroundColor: "rgba(255, 255, 255, 0.06)",
+    borderRadius: 11,
+    paddingHorizontal: 16,
+    color: "#F0F2F5",
+    fontSize: 16,
+  },
+  modalDivider: {
+    height: 1,
+    backgroundColor: "rgba(255, 255, 255, 0.06)",
+    marginVertical: 20,
+  },
+  subHeader: {
+    fontSize: 15,
+    fontWeight: "600",
+    color: "#F0F2F5",
+    marginBottom: 16,
+  },
+  statusBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    marginBottom: 16,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    backgroundColor: "rgba(34, 197, 94, 0.08)",
+    borderRadius: 8,
+    alignSelf: "flex-start",
+  },
+  statusText: {
+    fontSize: 13,
+    color: "#22C55E",
+    fontWeight: "600",
+  },
+  modalActions: {
+    flexDirection: "row",
+    gap: 12,
+    marginTop: 8,
+  },
+  cancelBtn: {
     flex: 1,
+    height: 48,
+    borderRadius: 11,
+    backgroundColor: "rgba(255, 255, 255, 0.06)",
+    justifyContent: "center",
+    alignItems: "center",
   },
-  modalButtonSmall: {
+  cancelBtnText: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: "#F0F2F5",
+  },
+  confirmBtn: {
     flex: 1,
-  },
-  loginButton: {
-    backgroundColor: '#22c55e',
   },
 });

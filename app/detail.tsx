@@ -11,6 +11,9 @@ import { useResponsiveLayout } from "@/hooks/useResponsiveLayout";
 import { getCommonResponsiveStyles } from "@/utils/ResponsiveStyles";
 import ResponsiveNavigation from "@/components/navigation/ResponsiveNavigation";
 import ResponsiveHeader from "@/components/navigation/ResponsiveHeader";
+import Logger from '@/utils/Logger';
+
+const logger = Logger.withTag('DetailScreen');
 
 export default React.memo(function DetailScreen() {
   const { q, source, id } = useLocalSearchParams<{ q: string; source?: string; id?: string }>();
@@ -36,12 +39,40 @@ export default React.memo(function DetailScreen() {
 
   useEffect(() => {
     if (q) {
-      init(q, source, id);
+      const loadDetailAndAutoPlay = async () => {
+        await init(q, source, id);
+        
+        // 自动播放：当 detail 加载完成且有搜索结果时
+        const { searchResults, detail } = useDetailStore.getState();
+        if (searchResults.length > 0) {
+          // 选择最佳源
+          const bestSource = useDetailStore.getState().getBestSource(0); // 默认从第1集开始
+          const targetSource = bestSource || detail || searchResults[0];
+          
+          if (targetSource && targetSource.episodes && targetSource.episodes.length > 0) {
+            // 跳转到播放页面
+            router.push({
+              pathname: "/play",
+              params: {
+                episodeIndex: "0",
+                position: "0",
+                source: targetSource.source,
+                id: id || "",
+                title: targetSource.title || q,
+              },
+            });
+          }
+        }
+      };
+      
+      loadDetailAndAutoPlay().catch(error => {
+        logger.error('Auto-play failed:', error);
+      });
     }
     return () => {
       abort();
     };
-  }, [abort, init, q, source, id]);
+  }, [q, source, id, init, abort, router]);
 
   const handlePlay = useCallback((episodeIndex: number) => {
     if (!detail) return;

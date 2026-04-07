@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { StyleSheet, Pressable, Platform } from "react-native";
+import { StyleSheet, Pressable, Platform, ViewStyle } from "react-native";
 import { ThemedView } from "@/components/ThemedView";
 import { Colors } from "@/constants/Colors";
 import { useResponsiveLayout } from "@/hooks/useResponsiveLayout";
@@ -10,9 +10,10 @@ interface SettingsSectionProps {
   onBlur?: () => void;
   onPress?: () => void;
   focusable?: boolean;
+  style?: ViewStyle;
 }
 
-export const SettingsSection: React.FC<SettingsSectionProps> = React.memo(({ children, onFocus, onBlur, onPress, focusable = false }) => {
+export const SettingsSection: React.FC<SettingsSectionProps> = React.memo(({ children, onFocus, onBlur, onPress, focusable = false, style }) => {
   const [isFocused, setIsFocused] = useState(false);
   const deviceType = useResponsiveLayout().deviceType;
 
@@ -26,23 +27,18 @@ export const SettingsSection: React.FC<SettingsSectionProps> = React.memo(({ chi
     onBlur?.();
   };
 
-  const handlePress = () => {
-    onPress?.();
-  }
-
   if (!focusable) {
-    return <ThemedView style={styles.section}>{children}</ThemedView>;
+    return <ThemedView style={[styles.section, style]}>{children}</ThemedView>;
   }
 
   return (
-    <ThemedView style={[styles.section, isFocused && styles.sectionFocused]}>
+    <ThemedView style={[styles.section, isFocused && styles.sectionFocused, style]}>
       <Pressable
-        android_ripple={Platform.isTV||deviceType !=='tv'? {color:'transparent'}:{color:Colors.dark.link}}
+        android_ripple={Platform.isTV || deviceType !== 'tv' ? { color: 'transparent' } : { color: Colors.dark.link }}
         style={styles.sectionPressable}
-        // {...(Platform.isTV ? {onFocus: handleFocus, onBlur: handleBlur} : {onPress: onPress})}
         onFocus={handleFocus}
         onBlur={handleBlur}
-        onPress={handlePress}
+        onPress={onPress}
       >
         {children}
       </Pressable>
@@ -54,15 +50,14 @@ SettingsSection.displayName = 'SettingsSection';
 
 const styles = StyleSheet.create({
   section: {
-    padding: 20,
-    marginBottom: 16,
+    paddingVertical: 4,
+    marginBottom: 24,
     borderRadius: 12,
-    borderWidth: 1,
-    borderColor: "#333",
+    backgroundColor: "rgba(255, 255, 255, 0.04)",
+    overflow: "hidden",
   },
   sectionFocused: {
-    borderColor: Colors.dark.primary,
-    backgroundColor: "#007AFF10",
+    backgroundColor: "rgba(0, 201, 107, 0.06)",
   },
   sectionPressable: {
     width: "100%",

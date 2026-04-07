@@ -81,6 +81,11 @@ export interface ServerConfig {
 
 export class API {
   public baseURL: string = "";
+  private proxy: { enabled: boolean; httpProxy: string; httpsProxy: string } = {
+    enabled: false,
+    httpProxy: "",
+    httpsProxy: "",
+  };
 
   constructor(baseURL?: string) {
     if (baseURL) {
@@ -90,6 +95,10 @@ export class API {
 
   public setBaseUrl(url: string) {
     this.baseURL = url;
+  }
+
+  public setProxy(proxy: { enabled: boolean; httpProxy: string; httpsProxy: string }) {
+    this.proxy = proxy;
   }
 
   protected async _fetch(

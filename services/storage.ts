@@ -44,6 +44,11 @@ export interface AppSettings {
   autoContinuePlayback?: boolean;
   autoSpeedTest?: boolean;
   autoSwitchSource?: boolean;
+  proxy?: {
+    enabled: boolean;
+    httpProxy: string;
+    httpsProxy: string;
+  };
 }
 
 export interface LoginCredentials {
@@ -343,6 +348,11 @@ export class SettingsManager {
         sources: {},
       },
       m3uUrl: "",
+      proxy: {
+        enabled: false,
+        httpProxy: "",
+        httpsProxy: "",
+      },
     };
     try {
       const data = await AsyncStorage.getItem(STORAGE_KEYS.SETTINGS);
