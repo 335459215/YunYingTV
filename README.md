@@ -99,7 +99,7 @@ npm run build
 **文件**: `.github/workflows/android-build.yml`
 
 #### 触发条件
-- ✅ 推送到 `master` 或 `main` 分支
+- ✅ 推送到 `main` 分支
 - ✅ Pull Request 创建/更新
 - ✅ 手动触发（workflow_dispatch）
 
@@ -142,7 +142,7 @@ npm run build
 **文件**: `.github/workflows/build-eas.yml`
 
 #### 触发条件
-- ✅ 推送到 `master` 分支
+- ✅ 推送到 `main` 分支
 - ✅ 创建 `v*` 标签（如 v1.2.3）
 - ✅ 手动触发
 
