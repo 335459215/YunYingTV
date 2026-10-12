@@ -130,6 +130,15 @@ export default React.memo(function HomeScreen() {
     }
   }, [apiConfigStatus.needsConfiguration, error, clearError]);
 
+  // 当页面获得焦点时（如从详情页返回），重新加载数据
+  useFocusEffect(
+    useCallback(() => {
+      if (hasServer && selectedCategory) {
+        fetchInitialData();
+      }
+    }, [hasServer, selectedCategory, fetchInitialData])
+  );
+
   const onRefresh = useCallback(async () => {
     if (!hasServer) return;
     setRefreshing(true);

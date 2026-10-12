@@ -10,7 +10,6 @@ import { AutoContinueSection } from "@/components/settings/AutoContinueSection";
 import { LiveStreamSection, LiveStreamSectionRef } from "@/components/settings/LiveStreamSection";
 import { RemoteInputSection } from "@/components/settings/RemoteInputSection";
 import { ServerManagerSection } from "@/components/settings/ServerManagerSection";
-import { LoginSection } from "@/components/settings/LoginSection";
 import { UpdateSection } from "@/components/settings/UpdateSection";
 import { ThemeSection } from "@/components/settings/ThemeSection";
 import ResponsiveNavigation from "@/components/navigation/ResponsiveNavigation";
@@ -146,18 +145,6 @@ export default function SettingsScreen() {
         />
       ),
       key: "server",
-    },
-    {
-      component: (
-        <LoginSection
-          onChanged={markAsChanged}
-          onFocus={() => {
-            setCurrentFocusIndex(4);
-            setCurrentSection("login");
-          }}
-        />
-      ),
-      key: "login",
     },
     deviceType !== "mobile" && {
       component: (

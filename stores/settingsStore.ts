@@ -21,6 +21,11 @@ interface SettingsState {
       [key: string]: boolean;
     };
   };
+  proxy: {
+    enabled: boolean;
+    httpProxy: string;
+    httpsProxy: string;
+  };
   isModalVisible: boolean;
   serverConfig: ServerConfig | null;
   isLoadingServerConfig: boolean;
@@ -41,6 +46,7 @@ interface SettingsState {
   saveSettings: () => Promise<void>;
   setVideoSource: (config: { enabledAll: boolean; sources: { [key: string]: boolean } }) => void;
   setTheme: (theme: "dark" | "light" | "glass") => void;
+  setProxy: (proxy: { enabled: boolean; httpProxy: string; httpsProxy: string }) => void;
   showModal: () => void;
   hideModal: () => void;
   // 服务器管理方法
@@ -65,6 +71,11 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
   autoSpeedTest: true, // 默认开启自动测速
   autoSwitchSource: true, // 默认开启自动切换低延迟数据源
   theme: "dark", // 默认深色主题
+  proxy: {
+    enabled: false,
+    httpProxy: "",
+    httpsProxy: "",
+  },
   isModalVisible: false,
   serverConfig: null,
   isLoadingServerConfig: false,
@@ -89,6 +100,11 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
       videoSource: settings.videoSource || {
         enabledAll: true,
         sources: {},
+      },
+      proxy: settings.proxy || {
+        enabled: false,
+        httpProxy: "",
+        httpsProxy: "",
       },
     });
     
@@ -205,8 +221,9 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
     set({ theme });
     AsyncStorage.setItem("app_theme", theme).catch(() => {});
   },
+  setProxy: (proxy) => set({ proxy }),
   saveSettings: async () => {
-    const { apiBaseUrl, m3uUrl, remoteInputEnabled, autoContinuePlayback, autoSpeedTest, autoSwitchSource, videoSource } = get();
+    const { apiBaseUrl, m3uUrl, remoteInputEnabled, autoContinuePlayback, autoSpeedTest, autoSwitchSource, videoSource, proxy } = get();
     const currentSettings = await SettingsManager.get();
     const currentApiBaseUrl = currentSettings.apiBaseUrl;
     let processedApiBaseUrl = apiBaseUrl.trim();
@@ -236,6 +253,7 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
       autoSpeedTest,
       autoSwitchSource,
       videoSource,
+      proxy,
     });
     if ( currentApiBaseUrl !== processedApiBaseUrl) {
       await AsyncStorage.setItem('authCookies', '');

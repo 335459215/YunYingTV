@@ -1,5 +1,6 @@
 import { DarkTheme, DefaultTheme, ThemeProvider } from "@react-navigation/native";
 import { Stack, router, useRootNavigationState } from "expo-router";
+import { GestureHandlerRootView } from "react-native-gesture-handler";
 import * as SplashScreen from "expo-splash-screen";
 import * as SystemUI from "expo-system-ui";
 import { useEffect, useState } from "react";
@@ -156,20 +157,32 @@ export default function RootLayout() {
       return;
     }
 
+    let autoPlayTimeout: NodeJS.Timeout | null = null;
+
     if (pendingContinuation) {
-      router.replace({
-        pathname: "/play",
-        params: {
-          episodeIndex: pendingContinuation.index.toString(),
-          position: (pendingContinuation.play_time * 1000).toString(),
-          source: pendingContinuation.source,
-          id: pendingContinuation.id,
-          title: pendingContinuation.title,
-        },
-      });
+      // 添加300ms延迟，允许用户通过返回手势或按钮打断自动续播
+      autoPlayTimeout = setTimeout(() => {
+        router.replace({
+          pathname: "/play",
+          params: {
+            episodeIndex: pendingContinuation.index.toString(),
+            position: (pendingContinuation.play_time * 1000).toString(),
+            source: pendingContinuation.source,
+            id: pendingContinuation.id,
+            title: pendingContinuation.title,
+          },
+        });
+        setInitialRouteHandled(true);
+      }, 300);
+    } else {
+      setInitialRouteHandled(true);
     }
 
-    setInitialRouteHandled(true);
+    return () => {
+      if (autoPlayTimeout) {
+        clearTimeout(autoPlayTimeout);
+      }
+    };
   }, [initialRouteHandled, isAppReady, navigationState?.key, pendingContinuation]);
 
   // 检查更新
@@ -205,26 +218,28 @@ export default function RootLayout() {
   }, [remoteInputEnabled, startServer, stopServer, responsiveConfig.deviceType]);
 
   return (
-    <SafeAreaProvider>
-      <ThemeProvider value={theme === "light" ? DefaultTheme : DarkTheme}>
-        <View style={[styles.container, { backgroundColor }]}>
-          <Stack>
-            <Stack.Screen name="index" options={{ headerShown: false }} />
-            <Stack.Screen name="detail" options={{ headerShown: false }} />
-            {Platform.OS !== "web" && <Stack.Screen name="play" options={{ headerShown: false }} />}
-            <Stack.Screen name="search" options={{ headerShown: false }} />
-            <Stack.Screen name="live" options={{ headerShown: false }} />
-            <Stack.Screen name="settings" options={{ headerShown: false }} />
-            <Stack.Screen name="favorites" options={{ headerShown: false }} />
-            <Stack.Screen name="history" options={{ headerShown: false }} />
-            <Stack.Screen name="+not-found" />
-          </Stack>
-        </View>
-        <Toast />
-        <LoginModal />
-        <UpdateModal />
-      </ThemeProvider>
-    </SafeAreaProvider>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <SafeAreaProvider>
+        <ThemeProvider value={theme === "light" ? DefaultTheme : DarkTheme}>
+          <View style={[styles.container, { backgroundColor }]}>
+            <Stack>
+              <Stack.Screen name="index" options={{ headerShown: false }} />
+              <Stack.Screen name="detail" options={{ headerShown: false, gestureEnabled: true }} />
+              {Platform.OS !== "web" && <Stack.Screen name="play" options={{ headerShown: false, gestureEnabled: true }} />}
+              <Stack.Screen name="search" options={{ headerShown: false, gestureEnabled: true }} />
+              <Stack.Screen name="live" options={{ headerShown: false, gestureEnabled: true }} />
+              <Stack.Screen name="settings" options={{ headerShown: false, gestureEnabled: true }} />
+              <Stack.Screen name="favorites" options={{ headerShown: false, gestureEnabled: true }} />
+              <Stack.Screen name="history" options={{ headerShown: false, gestureEnabled: true }} />
+              <Stack.Screen name="+not-found" />
+            </Stack>
+          </View>
+          <Toast />
+          <LoginModal />
+          <UpdateModal />
+        </ThemeProvider>
+      </SafeAreaProvider>
+    </GestureHandlerRootView>
   );
 }
 
